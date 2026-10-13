@@ -1,10 +1,12 @@
 # Photo vs render
 
-Each round, `tools/shoot.mjs` rendered Compare mode headlessly (Chromium, software WebGL) from the photo's calibrated camera. The photo and the render were then compared side by side, with a 50/50 blend and pixel colour samples. Only one photo was supplied, so every round compares against `photos/photo1.jpg`.
+Each round, `tools/shoot.mjs` rendered Compare mode headlessly (Chromium, software WebGL) from the photo's calibrated camera. The photo and the render were then compared side by side, with a 50/50 blend and pixel colour samples.
 
-| Round 1, before | After round 1 | After round 2 |
-|---|---|---|
-| ![](shots/round1-before_photo0.jpg) | ![](shots/round2-before_photo0.jpg) | ![](shots/final_photo0.jpg) |
+**Photos covered: 1 of 1.** Only `photos/photo1.jpg` was supplied, so every round compares against it.
+
+| Round 1, before | After round 1 | After round 2 | After round 3 |
+|---|---|---|---|
+| ![](shots/round1-before_photo0.jpg) | ![](shots/round2-before_photo0.jpg) | ![](shots/round3-before_photo0.jpg) | ![](shots/final_photo0.jpg) |
 
 (In each image the photo is on the left and the render on the right.)
 
@@ -41,12 +43,28 @@ Fixes:
 - **Ceiling too bright and neutral.** Warmer, darker beige paint.
 - **The hallway behind the door showed as a box outside the room in Dollhouse.** It now hides with the ceiling.
 
+## Round 3
+
+A zoomed side-by-side pass over the round 2 result:
+
+| Region | Photo | Render after round 2 | Fix |
+|---|---|---|---|
+| Floor | Dark walnut, long planks, soft sheen | Lighter, more orange, short planks reading as parquet, glossy streaks | Planks 0.9-2.4 m long (were 0.45-1.85), less saturated, roughness 0.32 → 0.42 |
+| Ceiling light | Glowing frosted glass | Opaque matte dome | Dome glow doubled |
+| Bedding | Cool lavender linen and coverlet | Warmer, rail the same white as the coverlet | Linen and quilt shifted toward the photo's blue |
+| Walls near the lamps | Warm brown-grey | Slightly violet | Not changed (see below) |
+
+Mouse look was also added to the verifier (`walk-look`): a real click takes the pointer lock and the view must turn. Headless Chromium sends no `movementX` with Playwright's mouse moves under a lock, so the check falls back to one motion event dispatched under the real lock, and says so in its result.
+
+ROUND3_TABLE
+
 ## What still differs
 
 - The photo's HDR processing squeezes local contrast. That's why the bed's near side is still brighter than the photo, and the wall under the TV darker (about L107 vs L172). One global exposure can't match both.
-- At the foot of the bed, the photo's grey rail shows clearly under the coverlet. In the render the rail is nearly the coverlet's white, so the bed still reads as one pale block.
-- The floor is a little more orange, and its plank seams don't follow the photo's exactly.
-- The ceiling light reads as a matte dome rather than glowing frosted glass.
+- At the foot of the bed, the photo's grey rail shows clearly under the coverlet. In the render the rail is close to the coverlet's colour, so the bed still reads as one pale block.
+- The walls near the lamps are slightly more violet than the photo's warm grey; warming the paint would break the match under the window, where the photo is cool.
+- The floor's scraped texture and exact plank layout differ from the photo's.
+- The ceiling light glows now, but its rim reads as white plastic rather than clear glass and nickel.
 - The calibration residual is under 4 px on room lines. The console and the chair's left post are still about 5 px off.
 - From above in Dollhouse, a thin strip of white door trim still shows along the left wall's edge.
 - The TV, door and window view are fitted to this one camera angle. With a second photo, the window view would show a little parallax.

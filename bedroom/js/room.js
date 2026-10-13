@@ -33,7 +33,7 @@ function plank(g, b, x, y, w, l, s) {
   seed = s;
   for (const c of [g, b]) { c.save(); c.beginPath(); c.rect(x, y, w, l); c.clip(); }
   const t = rnd(); // dark walnut .. light brown: lighter planks are less saturated
-  g.fillStyle = `hsl(${14 + rnd() * 8},${26 - 10 * t}%,${25 + 17 * t}%)`;
+  g.fillStyle = `hsl(${14 + rnd() * 8},${22 - 8 * t}%,${30 + 18 * t}%)`;
   g.fillRect(x, y, w, l);
   const patches = g.createLinearGradient(0, y, 0, y + l); // light and dark patches along the board
   for (let k = 0; k <= 6; k++) patches.addColorStop(k / 6, rnd() < 0.55 ? `rgba(25,12,6,${rnd() * 0.3})` : `rgba(205,145,90,${rnd() * 0.16})`);

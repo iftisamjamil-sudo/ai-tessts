@@ -95,9 +95,14 @@ p.save(sys.argv[2]); r.save(sys.argv[3]); Image.blend(p, r, 0.5).save(sys.argv[4
     const y0 = await yaw();
     await page.mouse.move(600, 400); await page.mouse.move(800, 400, { steps: 5 });
     await frames();
-    const turned = Math.abs((await yaw()) - y0);
+    let turned = Math.abs((await yaw()) - y0), via = 'real mouse';
+    if (turned < 0.05) { // headless Chromium sends no movementX under pointer lock, so feed the locked page one motion event
+      await page.evaluate(() => document.dispatchEvent(new MouseEvent('mousemove', { movementX: 200 })));
+      await frames();
+      turned = Math.abs((await yaw()) - y0); via = 'mousemove event under the real lock';
+    }
     await page.keyboard.press('Escape');
-    return { pass: locked && turned > 0.05, detail: `pointer locked=${locked}, mouse moved 200 px, yaw changed ${turned.toFixed(3)} rad` };
+    return { pass: locked && turned > 0.05, detail: `pointer locked=${locked}, 200 px of motion via ${via}, yaw changed ${turned.toFixed(3)} rad` };
   });
 
   await check('walk-collision', async () => {
