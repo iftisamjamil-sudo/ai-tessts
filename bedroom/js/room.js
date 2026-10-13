@@ -170,18 +170,14 @@ export function buildRoom() {
   box(group, trim, ww + 0.06, 0.045, 0.012, xc, y0 - 0.0475, 0.006);
   box(group, trim, ww, 0.11, 0.09, xc, y1 - 0.055, -0.065);
   const fz = -REVEAL - 0.025; // frame centre, 5 cm deep behind the return
-  box(group, trim, 0.04, wh, 0.05, x0 + 0.02, yc, fz);
-  box(group, trim, 0.04, wh, 0.05, x1 - 0.02, yc, fz);
-  box(group, trim, ww, 0.08, 0.05, xc, y0 + 0.04, fz);
-  box(group, trim, ww, 0.06, 0.05, xc, y1 - 0.03, fz);
-  for (const m of mullions) box(group, trim, 0.07, wh, 0.056, m, yc, fz + 0.003);
-  const edges = [x0 + 0.04, ...mullions, x1 - 0.04];
-  for (let i = 0; i < 3; i++) { // sash / glazing-bead frame around each pane
-    const a = edges[i] + (i ? 0.035 : 0), b = edges[i + 1] - (i < 2 ? 0.035 : 0), bw = b - a;
-    box(group, trim, bw, 0.025, 0.02, (a + b) / 2, y0 + 0.0925, fz + 0.012);
-    box(group, trim, bw, 0.025, 0.02, (a + b) / 2, y1 - 0.0725, fz + 0.012);
-    box(group, trim, 0.025, wh - 0.14, 0.02, a + 0.0125, yc + 0.01, fz + 0.012);
-    box(group, trim, 0.025, wh - 0.14, 0.02, b - 0.0125, yc + 0.01, fz + 0.012);
+  box(group, trim, 0.045, wh, 0.05, x0 + 0.0225, yc, fz);
+  box(group, trim, 0.045, wh, 0.05, x1 - 0.0225, yc, fz);
+  box(group, trim, ww, 0.085, 0.05, xc, y0 + 0.0425, fz);
+  box(group, trim, ww, 0.09, 0.05, xc, y1 - 0.045, fz);
+  for (const m of mullions) { // meeting stiles: the vent sash's sits nearer the room than the fixed pane's
+    const s = m < xc ? -1 : 1;
+    box(group, trim, 0.035, wh, 0.05, m + s * 0.0175, yc, fz + 0.008);
+    box(group, trim, 0.035, wh, 0.05, m - s * 0.0175, yc, fz);
   }
   const glass = put(group, new THREE.Mesh(new THREE.PlaneGeometry(ww, wh),
     std(0xd6e4dc, 0.05, { transparent: true, opacity: 0.12, depthWrite: false })), xc, yc, fz - 0.005);

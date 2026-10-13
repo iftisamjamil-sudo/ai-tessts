@@ -187,7 +187,7 @@ function buildBed() {
   const white = std(0xf6f6f4, 0.9, { map: quilt.map, bumpMap: quilt.bumpMap, bumpScale: 0.8 });
   const brown = std(0x5a3a2e, 0.95, { map: linen.map, bumpMap: linen.bumpMap, bumpScale: 1 });
   const lattice = std(0xffffff, 0.9, { map: tex(latticeCanvas, 0.5), bumpMap: linen.bumpMap, bumpScale: 1 });
-  const sham = pillowGeo(0.92, 0.52, 0.19), sleep = pillowGeo(0.86, 0.48, 0.17), sq = pillowGeo(0.45, 0.45, 0.13), lat = pillowGeo(0.48, 0.36, 0.12);
+  const sham = pillowGeo(0.92, 0.52, 0.24), sleep = pillowGeo(0.86, 0.48, 0.22), sq = pillowGeo(0.45, 0.45, 0.19), lat = pillowGeo(0.48, 0.36, 0.17);
   for (const s of [-1, 1]) pillow(bed, sham, white, face, zc + s * 0.5, 1.0);
   const flange = pillowGeo(0.94, 0.56, 0.025); // sham border
   for (const s of [-1, 1]) pillow(bed, sleep, white, face - 0.2, zc + s * 0.5 + 0.12, 1.15, s * 0.05).add(new THREE.Mesh(flange, white));
