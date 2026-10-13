@@ -90,6 +90,8 @@ const ceilingLight = new THREE.PointLight(0xffd7a8, CEILING_CD, 0, 2);
 ceilingLight.position.set(CEILING_LIGHT.x, ROOM.H - 0.12, CEILING_LIGHT.z);
 ceilingLight.castShadow = true;
 ceilingLight.shadow.mapSize.set(1024, 1024);
+ceilingLight.shadow.camera.far = 9; // point-shadow bias scales with far: at the default 500, -0.002 is ~1 m and contact shadows vanish
+ceilingLight.shadow.camera.updateProjectionMatrix();
 ceilingLight.shadow.bias = -0.002;
 const sun = new THREE.DirectionalLight(0xffffff, 0);
 sun.target.position.set(ROOM.W / 2, 0, ROOM.D / 2);

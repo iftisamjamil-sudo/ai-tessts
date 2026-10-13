@@ -3,7 +3,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ARMCHAIR, FLOOR_LAMP, CONSOLE } from './layout.js';
 
-const POINT_CD = 2; // warm fill from inside the shade (candela)
+const DOWN_CD = 2; // cone out of the shade's bottom opening onto the chair and floor (candela)
 const SPOT_CD = 2.5; // wide cone from the shade top that paints the scallop on the back and left walls (candela)
 const GLOW = 0.6; // shade emissiveIntensity when on
 
@@ -87,7 +87,6 @@ function buildArmchair() {
   const bh = back - 0.04 - seat;
   add(g, rbox(iw - 0.01, bh, 0.07, 0.03), suede, 0, seat + bh / 2, zb + backT + 0.035).rotation.x = -0.08;
 
-  // Loose square pillow sunk into the back cushion, leaning over the back's top with a corner over the left arm (pose fitted to the photo).
   // Soft contact shadow: the hemisphere and env fill would otherwise light the floor under the seat like open floor.
   const pool = canvasTex(64, (c, n) => {
     const r = c.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
@@ -100,7 +99,8 @@ function buildArmchair() {
   shadow.rotation.x = -Math.PI / 2;
   shadow.userData.noShadow = true;
 
-  add(g, pillowGeo(0.46, 0.46, 0.12), suede, -0.166, 0.665, zb + 0.128).rotation.set(-0.595, -0.252, 0.05, 'YXZ');
+  // Loose square pillow sunk into the back cushion, leaning over the back's top with a corner over the left arm (pose fitted to the photo, x kept from the left arm).
+  add(g, pillowGeo(0.46, 0.46, 0.12), suede, 0.149 - iw / 2, 0.665, zb + 0.128).rotation.set(-0.595, -0.252, 0.05, 'YXZ');
 
   g.position.set(ARMCHAIR.x, 0, ARMCHAIR.z);
   g.rotation.y = ARMCHAIR.rotY;
@@ -131,26 +131,26 @@ function buildFloorLamp() {
   const bulb = add(root, new THREE.SphereGeometry(0.035, 16, 12), std(0xfff4e0, 0.5, { emissive: 0xffe2b8, emissiveIntensity: 2 }), 0, bulbY, 0);
   for (const m of [trimTop, trimBot, bulb]) m.userData.noShadow = true; // the shade casts: light leaves only through its openings
 
-  const point = new THREE.PointLight(0xffa850, POINT_CD, 0, 2);
+  // Spots, not a point light: a point's cone through the open top leaves a hard-edged ellipse on the ceiling that the photo does not have.
+  const down = new THREE.SpotLight(0xffa850, DOWN_CD, 0, 1.2, 0.3, 2); // 1.2 rad: the bottom rim seen from the bulb
   const spot = new THREE.SpotLight(0xffa850, SPOT_CD, 0, 1.5, 0.25, 2);
-  point.position.y = bulbY;
+  down.position.y = bulbY;
+  down.target.position.y = 0;
   spot.position.set(-0.05, shade1 - 0.03, -0.07); // just under the shade top, nudged toward the corner so the scallop peaks right above the shade
   spot.target.position.set(-0.05, shade1 + 0.97, -0.07);
-  for (const l of [point, spot]) {
+  for (const l of [down, spot]) {
     l.castShadow = true;
     l.shadow.mapSize.set(512, 512);
     l.shadow.bias = -0.002;
-    l.shadow.camera.near = 0.02; // the shade is closer than the default 0.5 m near plane
-    l.shadow.camera.far = 9; // the room's diagonal; a point shadow's bias scales with far, so the default 500 m bias skips the shade entirely
-    l.shadow.camera.updateProjectionMatrix(); // three only refreshes a point shadow's projection when its far changes
+    l.shadow.camera.near = 0.1; // the shade is closer than the default 0.5 m near plane
   }
-  root.add(point, spot, spot.target);
+  root.add(down, down.target, spot, spot.target);
 
   return {
     root, on: true,
     setOn(on) {
       this.on = on;
-      point.visible = spot.visible = on;
+      down.visible = spot.visible = on;
       glow.emissiveIntensity = on ? GLOW : 0;
       bulb.material.emissiveIntensity = on ? 2 : 0;
     },
