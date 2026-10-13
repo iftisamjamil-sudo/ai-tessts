@@ -7,23 +7,23 @@ import { buildRoom } from './room.js';
 import { buildBedArea } from './bed.js';
 import { buildSeating } from './seating.js';
 
-const EXPOSURE = 1.0;
+const EXPOSURE = 0.95;
 const CEILING_CD = 4; // warm dome fixture (candela)
-const SUN = 4; // peak morning sun through the window
-const ENV = 1; // bounce light and reflections from the captured room
+const SUN = 15; // peak morning sun through the window
+const ENV = 0.3; // bounce light and reflections from the captured room
 const FOV = 65;
 const EYE = 1.65, SPEED = 1.6, RADIUS = 0.25;
 const LOOP_S = 60; // one cinematic loop
 // hour, sky background, window-view tint, window light colour, window light nits, fill colour, fill intensity
 const KEYS = [
-  [6, 0x1c2540, 0x2a3558, 0x6f7fa8, 0.5, 0x6a7290, 0.25],
-  [7.5, 0xe8b48a, 0xffcfa8, 0xffd2aa, 6, 0xd8c4b0, 0.8],
-  [10, 0xc6d8ec, 0xfff6ea, 0xfff2e2, 9, 0xe6e8ec, 1.2],
-  [13, 0xc9d5e2, 0xffffff, 0xe4ecff, 9, 0xdfe6f0, 1.3],
-  [16.5, 0xcfcdc8, 0xf4ecdf, 0xf2ead8, 7, 0xe2ddd4, 1.0],
-  [18.5, 0xe0874a, 0xff9c5c, 0xffa868, 3, 0xd8a888, 0.6],
-  [20, 0x262a4c, 0x2c3460, 0x4a5888, 0.6, 0x5c5a74, 0.25],
-  [23, 0x070c1a, 0x0b1226, 0x1c2848, 0.1, 0x4a4050, 0.15],
+  [6, 0x1c2540, 0x2a3558, 0x6f7fa8, 0.5, 0x6a7290, 0.4],
+  [7.5, 0xe8b48a, 0xffcfa8, 0xffd2aa, 6, 0xd8c4b0, 1.35],
+  [10, 0xc6d8ec, 0xfff6ea, 0xfff2e2, 9, 0xe6e8ec, 2.0],
+  [13, 0xc9d5e2, 0xffffff, 0xe4ecff, 9, 0xdfe6f0, 2.2],
+  [16.5, 0xcfcdc8, 0xf4ecdf, 0xf2ead8, 7, 0xe2ddd4, 1.7],
+  [18.5, 0xe0874a, 0xff9c5c, 0xffa868, 3, 0xd8a888, 1.0],
+  [20, 0x262a4c, 0x2c3460, 0x4a5888, 0.6, 0x5c5a74, 0.4],
+  [23, 0x070c1a, 0x0b1226, 0x1c2848, 0.1, 0x4a4050, 0.25],
 ];
 // Cinematic keyframes [camera, look target]: by the console and chair, past the window, round the foot of the bed.
 const CINE = [
@@ -32,7 +32,7 @@ const CINE = [
   [[1.35, 1.35, 2.2], [0.9, 0.9, 0.3]],
   [[1.9, 1.4, 1.1], [2.6, 1.3, -0.5]],
   [[2.75, 1.5, 1.05], [4.6, 1.0, 1.3]],
-  [[2.35, 1.55, 2.4], [4.6, 0.9, 2.85]],
+  [[2.25, 1.55, 2.4], [4.6, 0.9, 2.85]],
   [[2.5, 1.6, 4.45], [4.4, 1.2, 2.6]],
   [[3.7, 1.65, 5.3], [3.3, 1.1, 0.5]],
   [[2.4, 1.6, 6.0], [0.8, 1.0, 2.0]],
@@ -76,7 +76,8 @@ scene.add(lid);
 scene.traverse((o) => { if (o.isMesh && !o.userData.noShadow) o.castShadow = o.receiveShadow = true; });
 
 // Lights
-const hemi = new THREE.HemisphereLight(0xffffff, 0x6b4a3a, 1);
+const hemi = new THREE.HemisphereLight(0xffffff, 0x2a2020, 1);
+hemi.position.set(0, 0.6, 1.5); // leans toward the window wall, like bounce from the bright room behind the photographer
 const { x0, x1, y0, y1 } = WINDOW;
 const daylight = new THREE.RectAreaLight(0xffffff, 1, x1 - x0, y1 - y0);
 daylight.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0.01);
@@ -144,9 +145,9 @@ function setMode(m) {
   orbit.enabled = m === 'dollhouse';
   ui.buttons.forEach((b) => b.setAttribute('aria-pressed', b.dataset.mode === m));
   ui.help.textContent = HELP[m] ?? '';
-  if (m === 'walk') { camera.position.copy(walkPos); camera.quaternion.copy(walkRot); }
+  if (m === 'walk') { camera.position.copy(walkPos); camera.quaternion.copy(walkRot); walkedAt = performance.now(); }
   if (m === 'dollhouse') {
-    camera.position.setFromSphericalCoords(8.5, THREE.MathUtils.degToRad(40), Math.atan2(-ROOM.W, ROOM.D)).add(orbit.target); // above the front-left corner
+    camera.position.setFromSphericalCoords(7.5, THREE.MathUtils.degToRad(40), Math.atan2(-ROOM.W, ROOM.D)).add(orbit.target); // above the front-left corner
     orbit.autoRotate = true;
     orbit.update();
   }
@@ -183,7 +184,10 @@ function resize() {
   camera.updateProjectionMatrix();
 }
 
-const clockText = (h) => `${((Math.floor(h) + 11) % 12) + 1}:${String(Math.round((h % 1) * 60)).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+function clockText(h) {
+  const m = Math.round(h * 60), hh = Math.floor(m / 60);
+  return `${((hh + 11) % 12) + 1}:${String(m % 60).padStart(2, '0')} ${hh < 12 ? 'AM' : 'PM'}`;
+}
 const tmp = new THREE.Color();
 
 function setTime(h) {
@@ -205,6 +209,7 @@ function setTime(h) {
   sun.position.set(0.75 * Math.sin(s), 0.65 * Math.sin(s), -Math.cos(s)).setLength(10).add(sun.target.position);
   sun.intensity = SUN * THREE.MathUtils.smoothstep(h, 6.3, 7.5) * (1 - THREE.MathUtils.smoothstep(h, 10.5, 12.2));
   sun.color.setHex(0xff9a50).lerp(tmp.setHex(0xfff1dc), THREE.MathUtils.smoothstep(h, 6.5, 9));
+  sun.visible = sun.intensity > 0; // skip its shadow pass and shading when it cannot reach the window
   renderer.shadowMap.needsUpdate = true;
   captureEnv();
 }
@@ -212,18 +217,26 @@ function setTime(h) {
 // Walk
 const keys = new Set(), fwd = new THREE.Vector3(), side = new THREE.Vector3(), step = new THREE.Vector3();
 const blocked = (x, z) => blockers.some((b) => x > b.min.x && x < b.max.x && z > b.min.z && z < b.max.z);
+let walkedAt = 0;
 
-function walk(dt) {
+// Also runs on every key change, so a key held between two slow frames still moves the player.
+function walk() {
+  const now = performance.now(), dt = Math.min((now - walkedAt) / 1000, 0.5);
+  walkedAt = now;
   const f = keys.has('KeyW') - keys.has('KeyS'), r = keys.has('KeyD') - keys.has('KeyA');
   if (!f && !r) return;
   camera.getWorldDirection(fwd).setY(0).normalize();
   side.crossVectors(fwd, camera.up);
-  step.set(0, 0, 0).addScaledVector(fwd, f).addScaledVector(side, r).setLength(SPEED * dt);
-  const p = camera.position, stuck = blocked(p.x, p.z); // never trap a player who starts inside a box
-  const x = THREE.MathUtils.clamp(p.x + step.x, RADIUS, ROOM.W - RADIUS);
-  if (stuck || !blocked(x, p.z)) p.x = x;
-  const z = THREE.MathUtils.clamp(p.z + step.z, RADIUS, ROOM.D - RADIUS);
-  if (stuck || !blocked(p.x, z)) p.z = z;
+  const n = Math.ceil(dt / 0.02); // 3 cm sub-steps: a long frame cannot tunnel through furniture
+  step.set(0, 0, 0).addScaledVector(fwd, f).addScaledVector(side, r).setLength((SPEED * dt) / n);
+  const p = camera.position;
+  for (let i = 0; i < n; i++) {
+    const stuck = blocked(p.x, p.z); // never trap a player who starts inside a box
+    const x = THREE.MathUtils.clamp(p.x + step.x, RADIUS, ROOM.W - RADIUS);
+    if (stuck || !blocked(x, p.z)) p.x = x;
+    const z = THREE.MathUtils.clamp(p.z + step.z, RADIUS, ROOM.D - RADIUS);
+    if (stuck || !blocked(p.x, z)) p.z = z;
+  }
 }
 
 function cinematic(dt) {
@@ -239,6 +252,7 @@ function cinematic(dt) {
 // Lamps
 const raycaster = new THREE.Raycaster();
 function toggleLamp(x, y) {
+  camera.updateMatrixWorld(); // the pose may have changed since the last frame
   raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
   const hit = raycaster.intersectObjects(lamps.map((l) => l.root), true)[0];
   const lamp = hit && lamps.find((l) => l.root.getObjectById(hit.object.id));
@@ -255,6 +269,7 @@ canvas.addEventListener('click', (e) => {
   else if (mode === 'dollhouse' && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) < 5) toggleLamp((e.clientX / innerWidth) * 2 - 1, 1 - (e.clientY / innerHeight) * 2);
 });
 addEventListener('keydown', (e) => {
+  if (mode === 'walk') walk();
   keys.add(e.code);
   if (e.repeat) return;
   const k = e.key.toLowerCase();
@@ -262,7 +277,10 @@ addEventListener('keydown', (e) => {
   else if (['1', '2', '3'].includes(k)) setMode(['walk', 'dollhouse', 'compare'][k - 1]);
   else if (mode === 'compare' && e.target !== ui.slider && (k === 'arrowleft' || k === 'arrowright')) setPhoto(photoIndex + (k === 'arrowright' ? 1 : -1));
 });
-addEventListener('keyup', (e) => keys.delete(e.code));
+addEventListener('keyup', (e) => {
+  if (mode === 'walk') walk();
+  keys.delete(e.code);
+});
 addEventListener('blur', () => keys.clear());
 addEventListener('resize', resize);
 ui.buttons.forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
@@ -286,7 +304,7 @@ THREE.DefaultLoadingManager.itemEnd('main');
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.25);
-  if (mode === 'walk') walk(dt);
+  if (mode === 'walk') walk();
   if (mode === 'dollhouse') orbit.update(dt);
   if (mode === 'cinematic') cinematic(dt);
   renderer.setScissorTest(mode === 'compare');
@@ -301,4 +319,3 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, camera);
   if (texturesLoaded) app.ready = true;
 });
-window.__capture = captureEnv; // TEMP-TUNING

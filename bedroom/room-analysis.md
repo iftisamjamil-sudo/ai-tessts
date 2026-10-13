@@ -83,9 +83,9 @@ Positions are centres on the floor unless noted. Sizes are w (x) x d (z) x h.
 | Nightstand (far) | x 4.50-4.95, z 1.13-1.73 | 0.45 x 0.60 x 0.70 | Espresso wood, 2 drawers, brushed-nickel bar pulls, drawers face -x |
 | Nightstand (near) | x 4.50-4.95, z 4.06-4.66 | same | same |
 | Table lamps x2 | on nightstands at (4.72, 0.70, 1.43) and (4.72, 0.70, 4.36) | 0.36 dia x 0.70 | Glossy aqua gourd base fading to deeper teal, chrome foot and neck, white drum shade (0.31 top / 0.36 bottom, 0.24 tall). Shade top at about 1.40 |
-| Floor lamp | (0.40, 0, 0.42), back-left corner | 0.45 dia shade, 1.70 tall | Chrome tripod, legs splay about 0.28 m. Hub at 1.15. Tan drum shade 1.45-1.70 |
-| Armchair | centre (0.67, 0, 0.79), turned 40 deg toward the room | 0.81 w x 0.85 d x 0.85 | Box-arm club chair. Espresso wood frame on the arm sides. Cream microsuede seat and back cushions. Seat 0.45, arms 0.66 |
-| Demilune console | flat side on the left wall, centre z 3.65 | 0.48 deep x 1.50 long x 0.72 | Three glass tiers (0.72, 0.42, 0.12) on dark espresso legs and rims. Lidded wicker box on top. Round seagrass baskets on the lower tiers. Potted ivy on the middle tier |
+| Floor lamp | (0.31, 0, 0.30), back-left corner | 0.42 dia shade, 1.47 tall | Chrome tripod, legs splay about 0.28 m. Hub at 1.16. Tan drum shade 1.19-1.47 (its bottom edge sits at camera height) |
+| Armchair | centre (0.76, 0, 0.90), turned 40 deg toward the room | 0.81 w x 0.57 d x 0.70 | Box-arm club chair. Espresso wood frame on the arm tops and front posts. Cream microsuede seat and back cushions, plus a loose pillow. Seat 0.45, arms 0.70 |
+| Demilune console | flat side on the left wall, centre z 3.65 | 0.48 deep x 1.50 long x 0.72 | Three glass tiers (0.72, 0.25, 0.07) on dark espresso legs and rims. Small lidded wicker box on top. Two round seagrass baskets and a potted ivy on the middle tier |
 | TV | left wall, centre (0, 1.47, 3.55) | 1.0 x 0.57 | Black bezel, slightly reflective screen. On a tilting arm in the photo (its edge is not vertical); modelled flush |
 | Rug | x 0.94-2.54, z 1.88-4.16 | 1.60 x 2.28 (a standard 5'3" x 7'6") | Cream ground, large leaves and flowers in chocolate, taupe and dusty blue |
 | Curtains | rod y 2.31 from x 1.10 to 4.00, 0.10 off the wall | 2 panels, x 1.12-1.56 and 3.58-4.00 | Taupe, pinch-pleated, floor length. Dark bronze rod with ball finials |

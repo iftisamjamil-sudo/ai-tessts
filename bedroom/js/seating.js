@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ARMCHAIR, FLOOR_LAMP, CONSOLE } from './layout.js';
 
 const POINT_CD = 2; // warm fill from inside the shade (candela)
@@ -202,14 +203,14 @@ function ivy() {
   add(g, new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r, y)), 40), std(0x4a2c24, 0.22), 0, 0, 0);
   add(g, new THREE.CircleGeometry(0.075, 24), std(0x2a1d15, 1), 0, 0.07, 0).rotation.x = -Math.PI / 2;
 
-  const stemMat = std(0x4b5a2c, 0.8), leaves = [], d = new THREE.Object3D();
+  const stems = [], leaves = [], d = new THREE.Object3D();
   for (let k = 0; k < 18; k++) {
     const trail = k >= 15, a = trail ? (k - 16) * 0.7 + rnd() * 0.3 : rnd() * 2 * Math.PI; // trailers spill toward the open side (+x)
     const len = trail ? 0.2 + rnd() * 0.08 : 0.1 + rnd() * 0.12, rise = trail ? 0.06 : 0.06 + rnd() * 0.1;
     const dir = (r, y) => new THREE.Vector3(Math.cos(a) * r, 0.07 + y, Math.sin(a) * r);
     const end = trail ? -0.06 - rnd() * 0.08 : rise - 0.05;
     const curve = new THREE.CatmullRomCurve3([dir(0, 0), dir(len * 0.35, rise), dir(len * 0.75, (rise + end) / 2 + 0.03), dir(len, end)]);
-    add(g, new THREE.TubeGeometry(curve, 16, 0.0018, 4), stemMat, 0, 0, 0);
+    stems.push(new THREE.TubeGeometry(curve, 16, 0.0018, 4));
     for (let t = 0.12; t <= 1; t += 0.07 + rnd() * 0.05) {
       const p = curve.getPoint(t);
       d.position.copy(p);
@@ -220,6 +221,7 @@ function ivy() {
       leaves.push(d.matrix.clone());
     }
   }
+  add(g, mergeGeometries(stems), std(0x4b5a2c, 0.8), 0, 0, 0).userData.noShadow = true;
   const leafMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), std(0xffffff, 0.6, { map: leafTex, alphaTest: 0.5, side: THREE.DoubleSide }), leaves.length);
   const c = new THREE.Color();
   leaves.forEach((m, i) => { leafMesh.setMatrixAt(i, m); leafMesh.setColorAt(i, c.setHSL(0.27 + rnd() * 0.05, 0.25, 0.75 + rnd() * 0.25)); });
@@ -255,7 +257,7 @@ function buildConsole() {
   g.add(box);
   const gap = tiers[0] - RIM.h - tiers[1]; // baskets are sized to fit under the shelf above
   const big = basket(0.12, Math.min(0.29, gap - 0.06));
-  big.position.set(0.12, tiers[1], 0.05);
+  big.position.set(0.135, tiers[1], 0.05);
   const small = basket(0.08, Math.min(0.2, gap - 0.08));
   small.position.set(0.23, tiers[1], 0.25);
   const plant = ivy();
