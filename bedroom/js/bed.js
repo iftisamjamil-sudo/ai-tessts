@@ -8,7 +8,7 @@ const SPOT_CD = 10; // upward cone that paints the scallop on the wall (candela)
 const GLOW = 0.8; // shade emissiveIntensity when on
 
 const HB = { T: 0.13, wing: 0.10, wingT: 0.07, W: 2.24 }; // wingback headboard
-const SHADE = { rTop: 0.18, rBot: 0.21, h: 0.27, top: 0.78 }; // top: shade top above the nightstand
+const SHADE = { rTop: 0.155, rBot: 0.18, h: 0.24, top: 0.70 }; // top: shade top above the nightstand (all measured off the photo)
 const SIDE_HEM = 0.19; // coverlet side hem height; the foot hem stops just above the rail
 
 const std = (color, roughness, extra) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
@@ -187,10 +187,10 @@ function buildBed() {
   const white = std(0xf6f6f4, 0.9, { map: quilt.map, bumpMap: quilt.bumpMap, bumpScale: 0.8 });
   const brown = std(0x5a3a2e, 0.95, { map: linen.map, bumpMap: linen.bumpMap, bumpScale: 1 });
   const lattice = std(0xffffff, 0.9, { map: tex(latticeCanvas, 0.5), bumpMap: linen.bumpMap, bumpScale: 1 });
-  const sham = pillowGeo(0.92, 0.52, 0.24), sleep = pillowGeo(0.86, 0.48, 0.22), sq = pillowGeo(0.45, 0.45, 0.19), lat = pillowGeo(0.48, 0.36, 0.17);
-  for (const s of [-1, 1]) pillow(bed, sham, white, face, zc + s * 0.5, 1.0);
-  const flange = pillowGeo(0.94, 0.56, 0.025); // sham border
-  for (const s of [-1, 1]) pillow(bed, sleep, white, face - 0.2, zc + s * 0.5 + 0.12, 1.15, s * 0.05).add(new THREE.Mesh(flange, white));
+  const sleep = pillowGeo(0.92, 0.52, 0.24), sham = pillowGeo(0.86, 0.48, 0.22), flange = pillowGeo(0.94, 0.56, 0.025);
+  const sq = pillowGeo(0.45, 0.45, 0.19), lat = pillowGeo(0.48, 0.36, 0.17);
+  for (const s of [-1, 1]) pillow(bed, sleep, white, face, zc + s * 0.5, 1.0);
+  for (const s of [-1, 1]) pillow(bed, sham, white, face - 0.2, zc + s * 0.5 + 0.12, 1.15, s * 0.05).add(new THREE.Mesh(flange, white));
   pillow(bed, sq, brown, face - 0.3, zc - 0.27, 1.05, 0.1, 0.04);
   pillow(bed, sq, brown, face - 0.3, zc + 0.43, 0.9, -0.2, -0.2);
   pillow(bed, lat, lattice, face - 0.45, zc - 0.1, 1.15, 0.25, 0.3);
@@ -199,20 +199,23 @@ function buildBed() {
 
 function buildNightstand(n) {
   const g = new THREE.Group();
-  const D = n.x1 - n.x0, W = n.w, H = n.h, FEET = 0.07, TOP = 0.03, OVER = 0.015;
-  const fx = n.x0 + OVER; // body front face
-  add(g, rbox(D, TOP, W, 0.006), wood, n.x0 + D / 2, H - TOP / 2, n.z);
+  const D = n.x1 - n.x0, W = n.w, H = n.h, FEET = 0.05, TOP = 0.035, OVER = 0.012, STILE = 0.035;
+  const fx = n.x0 + OVER; // case front face
+  add(g, rbox(D, TOP, W, 0.005), wood, n.x0 + D / 2, H - TOP / 2, n.z);
   add(g, new THREE.BoxGeometry(n.x1 - fx, H - TOP - FEET, W - 2 * OVER), wood, (fx + n.x1) / 2, (FEET + H - TOP) / 2, n.z);
 
-  // Two drawer fronts with a thin reveal, standing proud of the case, bar pulls facing the room.
-  const lo = FEET + 0.05, hi = H - TOP - 0.015, gap = 0.006, dh = (hi - lo - gap) / 2, dw = W - 2 * OVER - 0.03;
-  for (const y of [lo + dh / 2, hi - dh / 2]) {
-    add(g, rbox(0.02, dh, dw, 0.004), wood, fx - 0.008 + 0.01, y, n.z);
-    add(g, new RoundedBoxGeometry(0.008, 0.016, 0.22, 2, 0.003), nickel, fx - 0.035, y, n.z);
-    for (const s of [-1, 1]) add(g, new THREE.CylinderGeometry(0.005, 0.005, 0.03, 12), nickel, fx - 0.02, y, n.z + s * 0.085).rotation.z = Math.PI / 2;
+  // Two drawers framed by the case stiles, a deep bottom rail below. A dark backing reads as the reveal gap.
+  const lo = FEET + 0.085, hi = H - TOP - 0.012, gap = 0.008, dw = W - 2 * OVER - 2 * STILE, d1 = (hi - lo - gap) * 0.52;
+  for (const [y0, y1] of [[hi - d1, hi], [lo, hi - d1 - gap]]) {
+    const y = (y0 + y1) / 2;
+    add(g, new THREE.BoxGeometry(0.004, y1 - y0 + 0.008, dw + 0.008), std(0x120b08, 0.9), fx - 0.001, y, n.z);
+    add(g, rbox(0.02, y1 - y0, dw, 0.003), wood, fx + 0.006, y, n.z);
+    add(g, new RoundedBoxGeometry(0.008, 0.016, 0.2, 2, 0.003), nickel, fx - 0.03, y, n.z);
+    for (const s of [-1, 1]) add(g, new THREE.CylinderGeometry(0.005, 0.005, 0.03, 12), nickel, fx - 0.015, y, n.z + s * 0.08).rotation.z = Math.PI / 2;
   }
-  for (const [x, z] of [[fx + 0.025, -1], [fx + 0.025, 1], [n.x1 - 0.025, -1], [n.x1 - 0.025, 1]]) {
-    add(g, new THREE.CylinderGeometry(0.032, 0.022, FEET, 4), wood, x, FEET / 2, n.z + z * (W / 2 - OVER - 0.025)).rotation.y = Math.PI / 4;
+  // Short block feet at the corners, tapering toward the floor.
+  for (const [x, z] of [[fx + 0.03, -1], [fx + 0.03, 1], [n.x1 - 0.03, -1], [n.x1 - 0.03, 1]]) {
+    add(g, new THREE.CylinderGeometry(0.045, 0.036, FEET, 4), wood, x, FEET / 2, n.z + z * (W / 2 - OVER - 0.03)).rotation.y = Math.PI / 4;
   }
   return g;
 }
@@ -220,24 +223,24 @@ function buildNightstand(n) {
 function buildLamp(p) {
   const root = new THREE.Group();
   root.position.set(p.x, p.y, p.z);
-  add(root, new THREE.CylinderGeometry(0.056, 0.058, 0.02, 48), chrome, 0, 0.01, 0);
+  add(root, new THREE.CylinderGeometry(0.056, 0.058, 0.02, 48), chrome, 0, 0.01, 0); // foot disk
 
-  // Gourd: wide low bulb, long tapering neck. Ombre glaze: pale aqua neck, aqua shoulder, deeper teal at the foot.
-  const prof = [[0, 0.02], [0.045, 0.02], [0.066, 0.04], [0.081, 0.075], [0.087, 0.12], [0.085, 0.16], [0.075, 0.2], [0.058, 0.245],
-    [0.044, 0.29], [0.034, 0.34], [0.027, 0.39], [0.023, 0.43], [0.021, 0.46], [0.024, 0.475], [0.026, 0.485], [0, 0.485]];
+  // Gourd: squat round bulb under a long slender neck. Ombre glaze: deep teal bulb, aqua shoulder, pale aqua neck.
+  const prof = [[0, 0.02], [0.05, 0.02], [0.07, 0.035], [0.083, 0.065], [0.088, 0.1], [0.085, 0.135], [0.074, 0.168], [0.055, 0.195],
+    [0.038, 0.22], [0.029, 0.25], [0.024, 0.29], [0.02, 0.34], [0.017, 0.4], [0.018, 0.43], [0.022, 0.445], [0, 0.445]];
   const body = new THREE.LatheGeometry(new THREE.SplineCurve(prof.map(([r, y]) => new THREE.Vector2(r, y))).getPoints(80), 64);
   const neck = new THREE.Color(0xa0d6cc), top = new THREE.Color(0x48b8b8), deep = new THREE.Color(0x2e9aa0), c = new THREE.Color(), col = [];
   for (let i = 0; i < body.attributes.position.count; i++) {
     const y = body.attributes.position.getY(i);
-    c.lerpColors(deep, top, THREE.MathUtils.smoothstep(y, 0.1, 0.2)).lerp(neck, THREE.MathUtils.smoothstep(y, 0.22, 0.36));
+    c.lerpColors(deep, top, THREE.MathUtils.smoothstep(y, 0.08, 0.15)).lerp(neck, THREE.MathUtils.smoothstep(y, 0.17, 0.28));
     col.push(c.r, c.g, c.b);
   }
   body.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
   add(root, body, new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.04 }), 0, 0, 0);
 
-  const sb = SHADE.top - SHADE.h, bulbY = sb + 0.1;
-  add(root, new THREE.CylinderGeometry(0.011, 0.012, sb + 0.04 - 0.485, 16), chrome, 0, (0.485 + sb + 0.04) / 2, 0);
-  add(root, new THREE.CylinderGeometry(0.018, 0.018, 0.05, 16), chrome, 0, sb + 0.065, 0);
+  const sb = SHADE.top - SHADE.h, bulbY = sb + 0.09;
+  add(root, new THREE.CylinderGeometry(0.01, 0.011, sb + 0.04 - 0.445, 16), chrome, 0, (0.445 + sb + 0.04) / 2, 0);
+  add(root, new THREE.CylinderGeometry(0.017, 0.017, 0.05, 16), chrome, 0, sb + 0.065, 0);
 
   const glow = std(0xf1ece2, 0.9, { emissive: 0xf3d2a8, emissiveIntensity: GLOW, side: THREE.DoubleSide });
   const shade = add(root, new THREE.CylinderGeometry(SHADE.rTop, SHADE.rBot, SHADE.h, 64, 1, true), glow, 0, sb + SHADE.h / 2, 0);
@@ -245,9 +248,10 @@ function buildLamp(p) {
   shade.userData.noShadow = bulb.userData.noShadow = true;
 
   const point = new THREE.PointLight(0xffc58a, POINT_CD, 0, 2);
-  const spot = new THREE.SpotLight(0xffc58a, SPOT_CD, 0, 0.95, 0.55, 2);
-  point.position.y = spot.position.y = bulbY;
-  spot.target.position.y = bulbY + 1;
+  const spot = new THREE.SpotLight(0xffc58a, SPOT_CD, 0, 0.7, 0.6, 2);
+  point.position.y = spot.position.y = spot.target.position.y = bulbY;
+  spot.position.x = spot.target.position.x = 0.08; // light leaves the whole shade top, whose back edge nearly touches the wall
+  spot.target.position.y += 1;
   root.add(point, spot, spot.target);
 
   return {

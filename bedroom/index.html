@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bedroom 3D</title>
+<link rel="icon" href="data:,">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #111; color: #eee; font: 13px/1.4 system-ui, -apple-system, Segoe UI, sans-serif; }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; }
+  #photo { position: fixed; left: 0; top: 0; width: 50vw; height: 100vh; object-fit: contain; display: none; }
+  #crosshair { position: fixed; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: rgba(255, 255, 255, .85); box-shadow: 0 0 0 1px rgba(0, 0, 0, .5); pointer-events: none; display: none; }
+  body[data-mode=compare] #photo, body[data-mode=walk] #crosshair { display: block; }
+  #ui { position: fixed; left: 50%; bottom: 12px; transform: translateX(-50%); max-width: calc(100vw - 24px); box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; padding: 8px 12px; border-radius: 10px; background: rgba(18, 18, 22, .62); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  body[data-mode=cinematic] #ui { display: none; }
+  #modes { display: flex; gap: 4px; }
+  button { font: inherit; color: #ddd; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .14); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+  button:hover { background: rgba(255, 255, 255, .16); }
+  button[aria-pressed=true] { color: #111; background: #e9e4da; border-color: #e9e4da; }
+  button:focus-visible, input:focus-visible { outline: 2px solid #8cb4ff; outline-offset: 2px; }
+  kbd { font: 11px ui-monospace, monospace; opacity: .6; margin-right: 4px; }
+  .time { display: flex; align-items: center; gap: 8px; }
+  #time { width: 150px; accent-color: #e9e4da; }
+  #timeLabel { min-width: 62px; font-variant-numeric: tabular-nums; }
+  #help { flex-basis: 100%; margin: 0; text-align: center; font-size: 12px; color: #aaa; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+</head>
+<body data-mode="walk">
+<canvas id="c" aria-label="3D view of the bedroom"></canvas>
+<img id="photo" alt="Original photo of the bedroom">
+<div id="crosshair"></div>
+<div id="ui">
+  <div id="modes" role="group" aria-label="View mode">
+    <button type="button" data-mode="walk" aria-pressed="true"><kbd>1</kbd>Walk</button>
+    <button type="button" data-mode="dollhouse" aria-pressed="false"><kbd>2</kbd>Dollhouse</button>
+    <button type="button" data-mode="compare" aria-pressed="false"><kbd>3</kbd>Compare</button>
+  </div>
+  <div class="time">
+    <label for="time">Time of day</label>
+    <input type="range" id="time" min="6" max="23" step="0.25" value="13">
+    <output id="timeLabel" for="time">1:00 PM</output>
+  </div>
+  <p id="help" aria-live="polite"></p>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
