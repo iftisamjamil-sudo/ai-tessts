@@ -1,11 +1,12 @@
 import * as THREE from 'three';
-import { ROOM, WINDOW, DOOR, SWITCH, OUTLET, CEILING_LIGHT, TV, CURTAINS, ART, RUG } from './layout.js';
+import { ROOM, WINDOW, DOOR, SWITCH, OUTLET, CEILING_LIGHT, TV, CURTAINS, ART, RUG, PHOTOS } from './layout.js';
 
 const { W, D, H } = ROOM;
 const TILE = 2.6; // metres of floor per texture repeat (20 planks)
 const REVEAL = 0.12; // window drywall return depth
 const JAMB = 0.16; // wall thickness at the door
 const CASING = 0.07;
+const VIEW = [1.59, 3.49, 0.77, 1.96]; // x0, x1, y0, y1 on z=0 that tools/textures.py rectified into window.jpg
 
 const std = (color, roughness, extra) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
 const wallMat = std(0x5a5760, 0.92);
@@ -139,8 +140,9 @@ export function buildRoom() {
   bowl.scale.y = 0.65;
   bowl.position.y = -0.042;
   fixture.add(bowl);
-  box(fixture, std(0xa88a5a, 0.35, { metalness: 0.8 }), 0.012, 0.016, 0.012, 0, -0.156, 0);
-  fixture.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.011, 16, 8), std(0xa88a5a, 0.35, { metalness: 0.8 })), { position: new THREE.Vector3(0, -0.166, 0) }));
+  const brass = std(0xa88a5a, 0.35, { metalness: 0.8 });
+  box(fixture, brass, 0.012, 0.016, 0.012, 0, -0.156, 0);
+  fixture.add(new THREE.Mesh(new THREE.SphereGeometry(0.011, 16, 8), brass)).children.at(-1).position.y = -0.166;
   fixture.traverse((o) => { o.userData.noShadow = true; });
 
   // Baseboards, broken at the door casing
@@ -170,15 +172,20 @@ export function buildRoom() {
   for (let i = 0; i < 3; i++) { // sash / glazing-bead frame around each pane
     const a = edges[i] + (i ? 0.035 : 0), b = edges[i + 1] - (i < 2 ? 0.035 : 0), bw = b - a;
     box(group, trim, bw, 0.025, 0.02, (a + b) / 2, y0 + 0.0925, fz + 0.012);
-    box(group, trim, bw, 0.025, 0.02, (a + b) / 2, y1 - 0.1125, fz + 0.012);
-    box(group, trim, 0.025, wh - 0.18, 0.02, a + 0.0125, yc - 0.01, fz + 0.012);
-    box(group, trim, 0.025, wh - 0.18, 0.02, b - 0.0125, yc - 0.01, fz + 0.012);
+    box(group, trim, bw, 0.025, 0.02, (a + b) / 2, y1 - 0.0725, fz + 0.012);
+    box(group, trim, 0.025, wh - 0.14, 0.02, a + 0.0125, yc + 0.01, fz + 0.012);
+    box(group, trim, 0.025, wh - 0.14, 0.02, b - 0.0125, yc + 0.01, fz + 0.012);
   }
   const glass = add(new THREE.Mesh(new THREE.PlaneGeometry(ww, wh),
     std(0xd6e4dc, 0.05, { transparent: true, opacity: 0.12, depthWrite: false })), xc, yc, fz - 0.005);
   glass.userData.noShadow = true;
+  // Map window.jpg as seen from the photo camera, so the trees line up with the photo from there.
+  const viewTex = image('textures/window.jpg'), viewZ = fz - 0.03, [px, py, pz] = PHOTOS[0].position, k = (pz - viewZ) / pz;
+  const [vx0, vx1, vy0, vy1] = VIEW.map((v, i) => (i < 2 ? px : py) + k * (v - (i < 2 ? px : py)));
+  viewTex.repeat.set(ww / (vx1 - vx0), wh / (vy1 - vy0));
+  viewTex.offset.set((x0 - vx0) / (vx1 - vx0), (y0 - vy0) / (vy1 - vy0));
   const windowView = add(new THREE.Mesh(new THREE.PlaneGeometry(ww, wh),
-    new THREE.MeshBasicMaterial({ map: image('textures/window.jpg'), toneMapped: false })), xc, yc, fz - 0.03);
+    new THREE.MeshBasicMaterial({ map: viewTex, toneMapped: false })), xc, yc, viewZ);
   windowView.userData.noShadow = true;
 
   // Curtains on a dark bronze rod with ball finials and brackets
@@ -208,13 +215,12 @@ export function buildRoom() {
   hinge.rotation.y = Math.PI / 2; // open 90 deg into the hallway, flat against its end wall
   const slabW = dw - 0.006;
   box(hinge, trim, 0.035, h - 0.012, slabW, 0.0175, h / 2, -0.003 - slabW / 2);
-  for (const s of [-1, 1]) hinge.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.028, 16, 10), nickel), { position: new THREE.Vector3(0.0175 + s * 0.065, 0.91, -slabW + 0.065) }));
+  for (const s of [-1, 1]) hinge.add(new THREE.Mesh(new THREE.SphereGeometry(0.028, 16, 10), nickel)).children.at(-1).position.set(0.0175 + s * 0.065, 0.91, -slabW + 0.065);
   const hallMat = std(0xd8cdbd, 0.9, { side: THREE.BackSide });
   const hallFloor = floorTex.clone();
   hallFloor.repeat.set(1 / TILE, (dw + 1.04) / TILE);
-  const hall = box(group, [new THREE.MeshBasicMaterial({ visible: false }), hallMat, hallMat, std(0xffffff, 0.5, { map: hallFloor, side: THREE.BackSide }), hallMat, hallMat],
+  box(group, [new THREE.MeshBasicMaterial({ visible: false }), hallMat, hallMat, std(0xffffff, 0.5, { map: hallFloor, side: THREE.BackSide }), hallMat, hallMat],
     1, H, dw + 1.04, -JAMB - 0.5, H / 2, (z0 - 1 + z1 + 0.04) / 2);
-  hall.userData.noShadow = true;
 
   // Switch plate (left wall) and duplex outlet (window wall)
   box(group, trim, 0.006, 0.115, 0.07, 0.003, SWITCH.y, SWITCH.z);
@@ -232,7 +238,7 @@ export function buildRoom() {
   box(tv, std(0xd0d2d6, 0.15, { metalness: 0.9 }), 0.036, 0.012, TV.w + 0.002, 0.0475, -TV.h / 2 + 0.006, 0);
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(TV.w - 0.024, TV.h - 0.03), std(0x08090c, 0.06));
   screen.rotation.y = Math.PI / 2;
-  screen.position.set(0.0655, 0.003, 0);
+  screen.position.set(0.066, 0.003, 0);
   tv.add(screen);
 
   // Wall art: box frames with the print on the room-facing face
