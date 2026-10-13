@@ -88,6 +88,18 @@ p.save(sys.argv[2]); r.save(sys.argv[3]); Image.blend(p, r, 0.5).save(sys.argv[4
     return { pass: d > 0.3, detail: `moved ${d.toFixed(2)} m in 800 ms of 'w'` };
   });
 
+  await check('walk-look', async () => { // real click -> pointer lock, then real mouse motion turns the view
+    const yaw = () => page.evaluate(() => app.camera.rotation.y);
+    await page.mouse.click(600, 400);
+    const locked = await page.waitForFunction(() => document.pointerLockElement === app.renderer.domElement, null, { timeout: 10000 }).then(() => true, () => false);
+    const y0 = await yaw();
+    await page.mouse.move(600, 400); await page.mouse.move(800, 400, { steps: 5 });
+    await frames();
+    const turned = Math.abs((await yaw()) - y0);
+    await page.keyboard.press('Escape');
+    return { pass: locked && turned > 0.05, detail: `pointer locked=${locked}, mouse moved 200 px, yaw changed ${turned.toFixed(3)} rad` };
+  });
+
   await check('walk-collision', async () => {
     const box = await page.evaluate(() => {
       const near = b => Math.hypot((b.min.x + b.max.x) / 2 - 3.9, (b.min.z + b.max.z) / 2 - 2.85);

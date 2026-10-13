@@ -32,8 +32,8 @@ const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 function plank(g, b, x, y, w, l, s) {
   seed = s;
   for (const c of [g, b]) { c.save(); c.beginPath(); c.rect(x, y, w, l); c.clip(); }
-  const t = rnd(); // dark #553a2a .. light #836454: lighter planks are less saturated
-  g.fillStyle = `hsl(${17 + rnd() * 8},${34 - 12 * t}%,${25 + 17 * t}%)`;
+  const t = rnd(); // dark walnut .. light brown: lighter planks are less saturated
+  g.fillStyle = `hsl(${14 + rnd() * 8},${26 - 10 * t}%,${25 + 17 * t}%)`;
   g.fillRect(x, y, w, l);
   const patches = g.createLinearGradient(0, y, 0, y + l); // light and dark patches along the board
   for (let k = 0; k <= 6; k++) patches.addColorStop(k / 6, rnd() < 0.55 ? `rgba(25,12,6,${rnd() * 0.3})` : `rgba(205,145,90,${rnd() * 0.16})`);
@@ -77,7 +77,7 @@ function floorMaps() {
   seed = 7;
   for (let i = 0; i < n; i++) {
     const lens = [];
-    for (let sum = 0; sum < S - 0.45 * mpx;) { const l = (0.45 + rnd() * 1.4) * mpx; lens.push(l); sum += l; }
+    for (let sum = 0; sum < S - 0.45 * mpx;) { const l = (0.9 + rnd() * 1.5) * mpx; lens.push(l); sum += l; }
     const total = lens.reduce((a, l) => a + l, 0);
     let y = rnd() * S;
     for (const l0 of lens) {
@@ -135,7 +135,7 @@ export function buildRoom() {
   // Floor
   const [floorTex, floorBump] = floorMaps();
   for (const t of [floorTex, floorBump]) t.repeat.set(W / TILE, D / TILE);
-  const floorMat = std(0xffffff, 0.32, { map: floorTex, bumpMap: floorBump, bumpScale: 1.2 });
+  const floorMat = std(0xffffff, 0.42, { map: floorTex, bumpMap: floorBump, bumpScale: 1.2 });
   put(group, new THREE.Mesh(new THREE.PlaneGeometry(W, D), floorMat), W / 2, 0, D / 2).rotation.x = -Math.PI / 2;
 
   // Ceiling and flush-mount fixture (main.js adds the light)
@@ -146,7 +146,7 @@ export function buildRoom() {
   const ring = [[0.19, 0], [0.192, -0.01], [0.186, -0.028], [0.174, -0.042], [0.163, -0.046]].map(([r, y]) => new THREE.Vector2(r, y));
   fixture.add(new THREE.Mesh(new THREE.LatheGeometry(ring, 64), std(0xe0d2bc, 0.3, { emissive: 0x5a4630, side: THREE.DoubleSide })));
   put(fixture, new THREE.Mesh(new THREE.SphereGeometry(0.165, 48, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
-    std(0xf8f2e8, 0.35, { emissive: 0xffd9a8, emissiveIntensity: 1.3 })), 0, -0.042, 0).scale.y = 0.52;
+    std(0xf8f2e8, 0.35, { emissive: 0xffd9a8, emissiveIntensity: 2.6 })), 0, -0.042, 0).scale.y = 0.52;
   const brass = std(0xa88a5a, 0.35, { metalness: 0.3 });
   box(fixture, brass, 0.012, 0.016, 0.012, 0, -0.125, 0);
   put(fixture, new THREE.Mesh(new THREE.SphereGeometry(0.011, 16, 8), brass), 0, -0.135, 0);
