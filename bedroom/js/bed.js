@@ -7,8 +7,8 @@ const POINT_CD = 3; // warm fill from inside each shade (candela)
 const SPOT_CD = 2.5; // wide upward fan from the shade top that paints the scallop on the wall (candela)
 const GLOW = 0.8; // shade emissiveIntensity when on
 
-const HB = { T: 0.09, wing: 0.02, wingT: 0.07, W: 2.24 }; // wingback headboard
-const SHADE = { rTop: 0.155, rBot: 0.18, h: 0.24, top: 0.70 }; // top: shade top above the nightstand (all measured off the photo)
+const HB = { T: 0.09, wing: 0.02, wingT: 0.07, W: 2.16 }; // wingback headboard
+const SHADE = { rTop: 0.155, rBot: 0.18, h: 0.24, top: 0.72 }; // top: shade top above the nightstand (all measured off the photo)
 const SIDE_HEM = 0.19; // coverlet side hem height; the foot hem stops just above the rail
 
 const std = (color, roughness, extra) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });

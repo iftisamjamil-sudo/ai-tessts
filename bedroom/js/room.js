@@ -150,6 +150,7 @@ export function buildRoom() {
   const brass = std(0xa88a5a, 0.35, { metalness: 0.3 });
   box(fixture, brass, 0.012, 0.016, 0.012, 0, -0.125, 0);
   put(fixture, new THREE.Mesh(new THREE.SphereGeometry(0.011, 16, 8), brass), 0, -0.135, 0);
+  fixture.scale.setScalar(1.1); // the photo's dome is 0.42 m across
   fixture.traverse((o) => { o.userData.noShadow = true; });
 
   // Baseboards, broken at the door casing

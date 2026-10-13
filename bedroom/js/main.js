@@ -35,7 +35,7 @@ const CINE = [
   [[2.25, 1.55, 2.4], [4.6, 0.9, 2.85]],
   [[2.5, 1.6, 4.45], [4.4, 1.2, 2.6]],
   [[3.7, 1.65, 5.3], [3.3, 1.1, 0.5]],
-  [[2.4, 1.6, 6.0], [0.8, 1.0, 2.0]],
+  [[2.4, 1.6, 5.6], [0.8, 1.0, 2.0]],
 ];
 const HELP = {
   walk: 'Click to look around · WASD to move · click a lamp to switch it · Esc frees the mouse · C cinematic',

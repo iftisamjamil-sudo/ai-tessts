@@ -8,7 +8,7 @@ const SPOT_CD = 2.5; // wide cone from the shade top that paints the scallop on 
 const GLOW = 0.6; // shade emissiveIntensity when on
 
 const CHAIR = { armT: 0.09, armTop: 0.70, cap: 0.035, post: 0.035, leg: 0.10, deck: 0.32, seat: 0.47, back: 0.70, backT: 0.05 }; // back no higher than the arms: in the photo nothing shows above the right arm
-const LAMP = { hub: 1.16, shade0: 1.19, shade1: 1.47, rTop: 0.20, rBot: 0.21, spread: 0.28, legYaw: 0.26 }; // shade and leg directions fitted to the photo
+const LAMP = { hub: 1.19, shade0: 1.22, shade1: 1.47, rTop: 0.18, rBot: 0.19, spread: 0.28, legYaw: 0.26 }; // shade and leg directions fitted to the photo
 const RIM = { w: 0.04, h: 0.035 }; // console tier rim: radial width, height
 const TILE = 0.12; // metres per repeat of the wicker and seagrass photo crops
 
