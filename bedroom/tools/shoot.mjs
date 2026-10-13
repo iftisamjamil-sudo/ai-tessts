@@ -45,11 +45,12 @@ try {
   const frames = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   const blur = () => page.evaluate(() => document.activeElement?.blur()); // a focused #time slider would eat arrow keys
   const press = async key => { await blur(); await page.keyboard.press(key); await frames(); };
-  const hold = async (key, ms) => { await blur(); await page.keyboard.down(key); await page.waitForTimeout(ms); await page.keyboard.up(key); };
+  const wait = async ms => { await page.waitForTimeout(ms); await frames(); }; // software GL can take seconds per frame: make sure the app really ran
+  const hold = async (key, ms) => { await blur(); await page.keyboard.down(key); await wait(ms); await page.keyboard.up(key); };
   const cam = () => page.evaluate(() => app.camera.position.toArray());
   const shot = (name, opts) => page.screenshot({ path: path.join(out, name), ...opts });
   const UI = () => { const el = document.querySelector('#ui'), s = getComputedStyle(el); return el.getClientRects().length > 0 && s.visibility !== 'hidden' && +s.opacity > 0; };
-  const until = fn => page.waitForFunction(fn, null, { timeout: 10000 }).catch(() => {}); // the state is then read and judged by the caller
+  const until = fn => page.waitForFunction(fn, null, { timeout: 20000 }).catch(() => {}); // the state is then read and judged by the caller
 
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.waitForFunction(() => window.app?.ready, null, { timeout: 120000 });
@@ -60,16 +61,23 @@ try {
     for (let k = 0; k < PHOTOS.length && await page.evaluate(() => app.photoIndex) !== i; k++) await press('ArrowRight');
     await page.waitForFunction(src => { const p = document.querySelector('#photo'); return p.complete && p.naturalWidth > 0 && p.src.endsWith(src); }, PHOTOS[i].src);
     await frames();
-    const idx = await page.evaluate(() => app.photoIndex), b = await page.locator('#photo').boundingBox(), W = page.viewportSize().width;
+    const idx = await page.evaluate(() => app.photoIndex), W = page.viewportSize().width;
+    const b = await page.$eval('#photo', el => { // the picture inside #photo's box, as object-fit: contain lays it out
+      const r = el.getBoundingClientRect(), s = Math.min(r.width / el.naturalWidth, r.height / el.naturalHeight), w = el.naturalWidth * s, h = el.naturalHeight * s;
+      return { x: r.x + (r.width - w) / 2, y: r.y + (r.height - h) / 2, width: w, height: h };
+    });
     const f = n => path.join(out, `${n}_${i}.png`);
+    await page.evaluate(() => document.querySelector('#ui').style.visibility = 'hidden'); // the toolbar straddles the seam and would cover both crops
     await shot(`compare_${i}.png`, { fullPage: true });
-    await shot(`photo_${i}.png`, { clip: b });
-    await shot(`render_${i}.png`, { clip: { ...b, x: b.x + W / 2 } }); // the 3D view mirrors the photo's box into the right half
-    py('a = Image.open(sys.argv[1]).convert("RGB"); b = Image.open(sys.argv[2]).convert("RGB").resize(a.size); Image.blend(a, b, 0.5).save(sys.argv[3])', f('photo'), f('render'), f('blend'));
+    await page.evaluate(() => document.querySelector('#ui').style.visibility = '');
+    // Crop both from that one frame (another 3000 px software-GL screenshot costs ~a minute); the 3D view mirrors the photo's box into the right half.
+    py(`c = Image.open(sys.argv[1]).convert("RGB"); x0, y0, x1, y1, dx = map(int, sys.argv[5:])
+p, r = c.crop((x0, y0, x1, y1)), c.crop((x0 + dx, y0, x1 + dx, y1))
+p.save(sys.argv[2]); r.save(sys.argv[3]); Image.blend(p, r, 0.5).save(sys.argv[4])`, f('compare'), f('photo'), f('render'), f('blend'), ...[b.x, b.y, b.x + b.width, b.y + b.height, W / 2].map(v => String(Math.round(v))));
     return { pass: idx === i && b.x + b.width <= W / 2 + 1, detail: `photoIndex=${idx}, #photo box ${fmt([b.x, b.y, b.width, b.height])}` };
   });
 
-  await page.setViewportSize({ width: 1200, height: 800 }); // software GL: keep the interactive checks fast enough to move
+  await page.setViewportSize({ width: 1200, height: 800 }); // smaller frames render faster in software GL
 
   await check('walk-move', async () => {
     await page.evaluate(() => app.setMode('walk'));
@@ -106,7 +114,7 @@ try {
     await until(() => app.mode === 'dollhouse' && !app.ceiling.visible && app.camera.position.y > app.ROOM.H);
     const s = await page.evaluate(() => ({ mode: app.mode, ceiling: app.ceiling.visible, y: app.camera.position.y, H: app.ROOM.H }));
     const a = await cam();
-    await page.waitForTimeout(1000);
+    await wait(1000);
     const d = dist(a, await cam());
     await shot('dollhouse.png');
     return { pass: s.mode === 'dollhouse' && s.ceiling === false && s.y > s.H && d > 1e-3, detail: `mode=${s.mode} ceiling.visible=${s.ceiling} camera y=${s.y.toFixed(2)} moved ${d.toFixed(3)} m in 1 s` };
@@ -122,7 +130,7 @@ try {
         return { x: r.left + (c.x + 1) / 2 * r.width, y: r.top + (1 - c.y) / 2 * r.height, on: app.lamps[i].on };
       }, i);
       await page.mouse.click(p.x, p.y);
-      return page.waitForFunction(([i, on]) => app.lamps[i].on !== on, [i, p.on], { timeout: 3000 }).then(() => `(${p.x.toFixed(0)}, ${p.y.toFixed(0)})`, () => null);
+      return page.waitForFunction(([i, on]) => app.lamps[i].on !== on, [i, p.on], { timeout: 10000 }).then(() => `(${p.x.toFixed(0)}, ${p.y.toFixed(0)})`, () => null);
     };
     for (let i = 0; i < n; i++) {
       const off = await click(i), back = off && await click(i);
@@ -154,7 +162,7 @@ try {
     await until(`app.mode === 'cinematic' && !(${UI})()`);
     const [mode, shown] = [await page.evaluate(() => app.mode), await page.evaluate(UI)];
     const a = await cam();
-    await page.waitForTimeout(1500);
+    await wait(1500);
     const d = dist(a, await cam());
     await shot('cinematic.png');
     await press('c');
