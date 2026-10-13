@@ -1,0 +1,252 @@
+import * as THREE from 'three';
+import { ROOM, WINDOW, DOOR, SWITCH, OUTLET, CEILING_LIGHT, TV, CURTAINS, ART, RUG } from './layout.js';
+
+const { W, D, H } = ROOM;
+const TILE = 2.6; // metres of floor per texture repeat (20 planks)
+const REVEAL = 0.12; // window drywall return depth
+const JAMB = 0.16; // wall thickness at the door
+const CASING = 0.07;
+
+const std = (color, roughness, extra) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
+const wallMat = std(0x5a5760, 0.92);
+const drywall = std(0xf2efea, 0.88);
+const trim = std(0xf2efea, 0.45);
+const black = std(0x121212, 0.5);
+const nickel = std(0xc9c8c3, 0.3, { metalness: 0.7 });
+const bronze = std(0x2f2620, 0.45, { metalness: 0.6 });
+const loader = new THREE.TextureLoader();
+const image = (url) => { const t = loader.load(url); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
+
+function box(parent, mat, w, h, d, x, y, z) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x, y, z);
+  parent.add(m);
+  return m;
+}
+
+// Seeded so both copies of a plank that wraps across the tile edge draw identically.
+let seed = 1;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+function plank(g, b, x, y, w, l, s) {
+  seed = s;
+  for (const c of [g, b]) { c.save(); c.beginPath(); c.rect(x, y, w, l); c.clip(); }
+  g.fillStyle = `hsl(${16 + rnd() * 10},${34 + rnd() * 20}%,${16 + rnd() * 19}%)`;
+  g.fillRect(x, y, w, l);
+  for (let k = 0; k < 34; k++) { // lengthwise grain and mineral streaks
+    const gx = x + rnd() * w, ph = rnd() * 6, f = 0.002 + rnd() * 0.01, amp = 1 + rnd() * 4;
+    g.strokeStyle = rnd() < 0.65 ? `rgba(32,16,8,${0.05 + rnd() * 0.17})` : `rgba(214,150,86,${0.04 + rnd() * 0.12})`;
+    g.lineWidth = 0.6 + rnd() * (rnd() < 0.15 ? 12 : 2.5);
+    g.beginPath();
+    for (let v = 0; v <= l + 16; v += 16) g.lineTo(gx + Math.sin(v * f + ph) * amp, y + v);
+    g.stroke();
+  }
+  for (let v = rnd() * 30; v < l; v += 12 + rnd() * 26) { // hand-scrape scallops across the board
+    const amp = 2 + rnd() * 9, k = 0.5 + rnd() * 1.5, ph = rnd() * 6;
+    const curve = (c, dy) => { c.beginPath(); for (let u = 0; u <= w + 8; u += 8) c.lineTo(x + u, y + v + dy + amp * Math.sin(u / w * Math.PI * k + ph)); c.stroke(); };
+    b.strokeStyle = `rgba(0,0,0,${0.06 + rnd() * 0.12})`; b.lineWidth = 8 + rnd() * 18; curve(b, 0);
+    b.strokeStyle = 'rgba(255,255,255,0.18)'; b.lineWidth = 1.5; curve(b, -6);
+    g.strokeStyle = `rgba(222,168,108,${0.05 + rnd() * 0.13})`; g.lineWidth = 0.8 + rnd() * 1.6; curve(g, -6);
+  }
+  g.fillStyle = 'rgba(16,8,4,0.9)'; g.fillRect(x, y, 1.6, l); g.fillRect(x, y, w, 2.2); // seams
+  g.fillStyle = 'rgba(232,180,128,0.16)'; g.fillRect(x + 1.6, y, 1.4, l); g.fillRect(x, y + 2.2, w, 1.4); // worn bevel
+  b.fillStyle = '#1c1c1c'; b.fillRect(x, y, 2.5, l); b.fillRect(x, y, w, 3);
+  b.fillStyle = 'rgba(0,0,0,0.3)'; b.fillRect(x + 2.5, y, 3, l); b.fillRect(x + w - 3, y, 3, l);
+  g.restore(); b.restore();
+}
+
+function floorMaps() {
+  const S = 2048, n = 20, pw = S / n, mpx = S / TILE;
+  const [c, bc] = [0, 1].map(() => Object.assign(document.createElement('canvas'), { width: S, height: S }));
+  const g = c.getContext('2d'), b = bc.getContext('2d');
+  b.fillStyle = '#808080'; b.fillRect(0, 0, S, S);
+  seed = 7;
+  for (let i = 0; i < n; i++) {
+    const lens = [];
+    for (let sum = 0; sum < S - 0.45 * mpx;) { const l = (0.45 + rnd() * 1.4) * mpx; lens.push(l); sum += l; }
+    const total = lens.reduce((a, l) => a + l, 0);
+    let y = rnd() * S;
+    for (const l0 of lens) {
+      const l = l0 * S / total, s = 1 + Math.floor(rnd() * 1e9);
+      plank(g, b, i * pw, y, pw, l, s);
+      plank(g, b, i * pw, y - S, pw, l, s);
+      y += l;
+    }
+  }
+  return [c, bc].map((cv, i) => {
+    const t = new THREE.CanvasTexture(cv);
+    if (!i) t.colorSpace = THREE.SRGBColorSpace;
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = 16;
+    return t;
+  });
+}
+
+function curtain(x0, x1) {
+  const w = x1 - x0, top = CURTAINS.rodY - 0.02, len = top + 0.06; // 6 cm extra puddles on the floor
+  const geo = new THREE.PlaneGeometry(w, len, Math.ceil(w / 0.008), 80);
+  const p = geo.attributes.position;
+  const pleats = Math.round(w / 0.065), folds = Math.max(2, Math.round(w / 0.15));
+  for (let i = 0; i < p.count; i++) {
+    const u = p.getX(i) / w + 0.5, drop = 0.5 - p.getY(i) / len; // u 0..1 across, drop 0 at top..1 at bottom
+    const gather = Math.max(0, 1 - drop * 6); // pinch pleats only in the heading
+    const fold = 0.016 * Math.abs(Math.sin(u * Math.PI * pleats)) * (0.35 + gather)
+      + (0.012 + 0.03 * Math.min(1, drop * 2)) * Math.sin(u * Math.PI * 2 * folds + 0.8 + drop * 1.2);
+    let y = top - drop * len, z = CURTAINS.wallGap + fold;
+    if (y < 0.006) { z += 0.006 - y; y = 0.006; }
+    p.setXYZ(i, (x0 + x1) / 2 + (u - 0.5) * w * (0.94 + 0.1 * drop), y, z);
+  }
+  geo.computeVertexNormals();
+  return new THREE.Mesh(geo, std(0x9a8d86, 0.95, { side: THREE.DoubleSide }));
+}
+
+export function buildRoom() {
+  const group = new THREE.Group();
+  const add = (m, x, y, z) => { m.position.set(x, y, z); group.add(m); return m; };
+
+  // Walls: single-sided, normals into the room, so Dollhouse culls the near ones.
+  const rect = (u0, v0, u1, v1) => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+  const wall = (pts, rotY, x, z, hole) => {
+    const s = new THREE.Shape(pts.map(([u, v]) => new THREE.Vector2(u, v)));
+    if (hole) s.holes.push(new THREE.Path(hole.map(([u, v]) => new THREE.Vector2(u, v))));
+    add(new THREE.Mesh(new THREE.ShapeGeometry(s), wallMat), x, 0, z).rotation.y = rotY;
+  };
+  wall(rect(0, 0, W, H), 0, 0, 0, rect(WINDOW.x0, WINDOW.y0, WINDOW.x1, WINDOW.y1));
+  wall(rect(0, 0, D, H), -Math.PI / 2, W, 0);
+  wall(rect(0, 0, W, H), Math.PI, W, D);
+  wall([[0, 0], [D - DOOR.z1, 0], [D - DOOR.z1, DOOR.h], [D - DOOR.z0, DOOR.h], [D - DOOR.z0, 0], [D, 0], [D, H], [0, H]], Math.PI / 2, 0, D);
+
+  // Floor
+  const [floorTex, floorBump] = floorMaps();
+  for (const t of [floorTex, floorBump]) t.repeat.set(W / TILE, D / TILE);
+  const floorMat = std(0xffffff, 0.5, { map: floorTex, bumpMap: floorBump, bumpScale: 1.2 });
+  add(new THREE.Mesh(new THREE.PlaneGeometry(W, D), floorMat), W / 2, 0, D / 2).rotation.x = -Math.PI / 2;
+
+  // Ceiling and flush-mount fixture (main.js adds the light)
+  const ceiling = new THREE.Group();
+  group.add(ceiling);
+  const ceil = new THREE.Mesh(new THREE.PlaneGeometry(W, D), std(0xf2efea, 0.9));
+  ceil.rotation.x = Math.PI / 2;
+  ceil.position.set(W / 2, H, D / 2);
+  ceiling.add(ceil);
+  const fixture = new THREE.Group();
+  fixture.position.set(CEILING_LIGHT.x, H, CEILING_LIGHT.z);
+  ceiling.add(fixture);
+  const ring = [[0, 0], [0.19, 0], [0.192, -0.01], [0.186, -0.028], [0.174, -0.042], [0.163, -0.046]].map(([r, y]) => new THREE.Vector2(r, y));
+  fixture.add(new THREE.Mesh(new THREE.LatheGeometry(ring, 64), std(0xc9c8c3, 0.28, { metalness: 0.75, side: THREE.DoubleSide })));
+  const bowl = new THREE.Mesh(new THREE.SphereGeometry(0.165, 48, 16, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+    std(0xf8f2e8, 0.35, { emissive: 0xffe3c0, emissiveIntensity: 1.3 }));
+  bowl.scale.y = 0.65;
+  bowl.position.y = -0.042;
+  fixture.add(bowl);
+  box(fixture, std(0xa88a5a, 0.35, { metalness: 0.8 }), 0.012, 0.016, 0.012, 0, -0.156, 0);
+  fixture.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.011, 16, 8), std(0xa88a5a, 0.35, { metalness: 0.8 })), { position: new THREE.Vector3(0, -0.166, 0) }));
+  fixture.traverse((o) => { o.userData.noShadow = true; });
+
+  // Baseboards, broken at the door casing
+  const bb = 0.09, bt = 0.014;
+  box(group, trim, W, bb, bt, W / 2, bb / 2, bt / 2);
+  box(group, trim, W, bb, bt, W / 2, bb / 2, D - bt / 2);
+  box(group, trim, bt, bb, D, W - bt / 2, bb / 2, D / 2);
+  const za = DOOR.z0 - CASING, zb = DOOR.z1 + CASING;
+  box(group, trim, bt, bb, za, bt / 2, bb / 2, za / 2);
+  box(group, trim, bt, bb, D - zb, bt / 2, bb / 2, (zb + D) / 2);
+
+  // Window: 3-panel vinyl slider set in a white drywall return, with stool, apron and roller-shade box
+  const { x0, x1, y0, y1, mullions } = WINDOW, xc = (x0 + x1) / 2, yc = (y0 + y1) / 2, ww = x1 - x0, wh = y1 - y0;
+  box(group, drywall, 0.01, wh, REVEAL, x0 - 0.005, yc, -REVEAL / 2);
+  box(group, drywall, 0.01, wh, REVEAL, x1 + 0.005, yc, -REVEAL / 2);
+  box(group, drywall, ww + 0.02, 0.01, REVEAL, xc, y1 + 0.005, -REVEAL / 2);
+  box(group, trim, ww + 0.1, 0.025, REVEAL + 0.03, xc, y0 - 0.0125, (0.03 - REVEAL) / 2);
+  box(group, trim, ww + 0.06, 0.045, 0.012, xc, y0 - 0.0475, 0.006);
+  box(group, trim, ww, 0.11, 0.09, xc, y1 - 0.055, -0.065);
+  const fz = -REVEAL - 0.025; // frame centre, 5 cm deep behind the return
+  box(group, trim, 0.04, wh, 0.05, x0 + 0.02, yc, fz);
+  box(group, trim, 0.04, wh, 0.05, x1 - 0.02, yc, fz);
+  box(group, trim, ww, 0.08, 0.05, xc, y0 + 0.04, fz);
+  box(group, trim, ww, 0.06, 0.05, xc, y1 - 0.03, fz);
+  for (const m of mullions) box(group, trim, 0.07, wh, 0.056, m, yc, fz + 0.003);
+  const edges = [x0 + 0.04, ...mullions, x1 - 0.04];
+  for (let i = 0; i < 3; i++) { // sash / glazing-bead frame around each pane
+    const a = edges[i] + (i ? 0.035 : 0), b = edges[i + 1] - (i < 2 ? 0.035 : 0), bw = b - a;
+    box(group, trim, bw, 0.025, 0.02, (a + b) / 2, y0 + 0.0925, fz + 0.012);
+    box(group, trim, bw, 0.025, 0.02, (a + b) / 2, y1 - 0.1125, fz + 0.012);
+    box(group, trim, 0.025, wh - 0.18, 0.02, a + 0.0125, yc - 0.01, fz + 0.012);
+    box(group, trim, 0.025, wh - 0.18, 0.02, b - 0.0125, yc - 0.01, fz + 0.012);
+  }
+  const glass = add(new THREE.Mesh(new THREE.PlaneGeometry(ww, wh),
+    std(0xd6e4dc, 0.05, { transparent: true, opacity: 0.12, depthWrite: false })), xc, yc, fz - 0.005);
+  glass.userData.noShadow = true;
+  const windowView = add(new THREE.Mesh(new THREE.PlaneGeometry(ww, wh),
+    new THREE.MeshBasicMaterial({ map: image('textures/window.jpg'), toneMapped: false })), xc, yc, fz - 0.03);
+  windowView.userData.noShadow = true;
+
+  // Curtains on a dark bronze rod with ball finials and brackets
+  const { rodY, rodX0, rodX1, wallGap } = CURTAINS;
+  add(new THREE.Mesh(new THREE.CylinderGeometry(0.0125, 0.0125, rodX1 - rodX0, 16), bronze), (rodX0 + rodX1) / 2, rodY, wallGap).rotation.z = Math.PI / 2;
+  for (const [x, s] of [[rodX0, -1], [rodX1, 1]]) add(new THREE.Mesh(new THREE.SphereGeometry(0.03, 20, 12), bronze), x + s * 0.025, rodY, wallGap);
+  for (const x of [rodX0 + 0.08, (rodX0 + rodX1) / 2, rodX1 - 0.08]) {
+    box(group, bronze, 0.03, 0.07, 0.008, x, rodY - 0.01, 0.004);
+    box(group, bronze, 0.014, 0.014, wallGap, x, rodY - 0.01, wallGap / 2);
+  }
+  for (const [a, b] of CURTAINS.panels) group.add(curtain(a, b));
+
+  // Door: casing, jambs with stops and strike, slab swung open into a dim hallway
+  const { z0, z1, h } = DOOR, zc = (z0 + z1) / 2, dw = z1 - z0;
+  box(group, trim, 0.018, h + 0.005, CASING, 0.009, (h + 0.005) / 2, z0 - CASING / 2);
+  box(group, trim, 0.018, h + 0.005, CASING, 0.009, (h + 0.005) / 2, z1 + CASING / 2);
+  box(group, trim, 0.018, CASING, dw + 2 * CASING, 0.009, h + CASING / 2, zc);
+  box(group, trim, 0.03, 0.022, dw + 2 * CASING + 0.03, 0.015, h + CASING + 0.011, zc);
+  box(group, trim, JAMB, h, 0.02, -JAMB / 2, h / 2, z0 - 0.01);
+  box(group, trim, JAMB, h, 0.02, -JAMB / 2, h / 2, z1 + 0.01);
+  box(group, trim, JAMB, 0.02, dw + 0.04, -JAMB / 2, h + 0.01, zc);
+  box(group, trim, 0.032, h, 0.012, -0.106, h / 2, z0 + 0.006);
+  box(group, trim, 0.032, h, 0.012, -0.106, h / 2, z1 - 0.006);
+  box(group, trim, 0.032, 0.012, dw, -0.106, h - 0.006, zc);
+  box(group, nickel, 0.028, 0.07, 0.003, -0.14, 0.91, z0 + 0.0015);
+  const hinge = add(new THREE.Group(), -JAMB, 0, z1);
+  hinge.rotation.y = Math.PI / 2; // open 90 deg into the hallway, flat against its end wall
+  const slabW = dw - 0.006;
+  box(hinge, trim, 0.035, h - 0.012, slabW, 0.0175, h / 2, -0.003 - slabW / 2);
+  for (const s of [-1, 1]) hinge.add(Object.assign(new THREE.Mesh(new THREE.SphereGeometry(0.028, 16, 10), nickel), { position: new THREE.Vector3(0.0175 + s * 0.065, 0.91, -slabW + 0.065) }));
+  const hallMat = std(0xd8cdbd, 0.9, { side: THREE.BackSide });
+  const hallFloor = floorTex.clone();
+  hallFloor.repeat.set(1 / TILE, (dw + 1.04) / TILE);
+  const hall = box(group, [new THREE.MeshBasicMaterial({ visible: false }), hallMat, hallMat, std(0xffffff, 0.5, { map: hallFloor, side: THREE.BackSide }), hallMat, hallMat],
+    1, H, dw + 1.04, -JAMB - 0.5, H / 2, (z0 - 1 + z1 + 0.04) / 2);
+  hall.userData.noShadow = true;
+
+  // Switch plate (left wall) and duplex outlet (window wall)
+  box(group, trim, 0.006, 0.115, 0.07, 0.003, SWITCH.y, SWITCH.z);
+  box(group, trim, 0.012, 0.024, 0.009, 0.009, SWITCH.y, SWITCH.z);
+  box(group, trim, 0.07, 0.115, 0.006, OUTLET.x, OUTLET.y, 0.003);
+  for (const dy of [-0.02, 0.02]) {
+    box(group, trim, 0.034, 0.036, 0.01, OUTLET.x, OUTLET.y + dy, 0.005);
+    for (const dx of [-0.006, 0.006]) box(group, black, 0.002, 0.009, 0.002, OUTLET.x + dx, OUTLET.y + dy + 0.004, 0.0105);
+  }
+
+  // TV on the left wall: thin black panel, chrome bottom trim, glossy screen
+  const tv = add(new THREE.Group(), 0, TV.y, TV.z);
+  box(tv, black, 0.03, 0.3, 0.4, 0.015, 0, 0);
+  box(tv, std(0x0c0c0d, 0.35), 0.035, TV.h, TV.w, 0.0475, 0, 0);
+  box(tv, std(0xd0d2d6, 0.15, { metalness: 0.9 }), 0.036, 0.012, TV.w + 0.002, 0.0475, -TV.h / 2 + 0.006, 0);
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(TV.w - 0.024, TV.h - 0.03), std(0x08090c, 0.06));
+  screen.rotation.y = Math.PI / 2;
+  screen.position.set(0.0655, 0.003, 0);
+  tv.add(screen);
+
+  // Wall art: box frames with the print on the room-facing face
+  for (const a of ART) {
+    const face = std(0xffffff, 0.5, { map: image(a.tex) });
+    const m = box(group, [black, black, black, black, face, black], a.w, a.h, 0.03, 0, a.y, 0);
+    if (a.wall === 'back') m.position.set(a.c, a.y, 0.015);
+    else { m.position.set(W - 0.015, a.y, a.c); m.rotation.y = -Math.PI / 2; }
+  }
+
+  // Rug
+  const rugEdge = std(0xd9d2c4, 1);
+  box(group, [rugEdge, rugEdge, std(0xffffff, 1, { map: image('textures/rug.jpg') }), rugEdge, rugEdge, rugEdge],
+    RUG.x1 - RUG.x0, 0.012, RUG.z1 - RUG.z0, (RUG.x0 + RUG.x1) / 2, 0.006, (RUG.z0 + RUG.z1) / 2);
+
+  return { group, ceiling, windowView, colliders: [] };
+}
