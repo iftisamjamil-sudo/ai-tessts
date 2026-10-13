@@ -56,7 +56,17 @@ A zoomed side-by-side pass over the round 2 result:
 
 Mouse look was also added to the verifier (`walk-look`): a real click takes the pointer lock and the view must turn. Headless Chromium sends no `movementX` with Playwright's mouse moves under a lock, so the check falls back to one motion event dispatched under the real lock, and says so in its result.
 
-ROUND3_TABLE
+Measured (photo vs render colour, same 1500 px compare image):
+
+| Spot | Photo | After round 2 | After round 3 |
+|---|---|---|---|
+| Foreground floor | (143,103,85) | (136,91,65) | (139,97,75) |
+| Floor, left | (138,107,102) | (82,56,45) | (98,72,64) |
+| Headboard | (204,206,221) | (196,191,200) | (193,191,206) |
+| Coverlet top | (202,203,221) | (210,202,206) | (208,201,210) |
+| Ceiling light | (234,219,195) | (231,225,218) | (233,227,221) |
+
+Final verifier run: zero console errors, warnings or failed requests. All 9 checks pass: compare shot, walk move, walk look, walk collision, dollhouse, lamp click, time of day, cinematic, photo cycling.
 
 ## What still differs
 
