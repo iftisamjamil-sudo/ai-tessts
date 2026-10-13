@@ -48,4 +48,5 @@ Fixes:
 - The floor is a little more orange, and its plank seams don't follow the photo's exactly.
 - The ceiling light reads as a matte dome rather than glowing frosted glass.
 - The calibration residual is under 4 px on room lines. The console and the chair's left post are still about 5 px off.
+- From above in Dollhouse, a thin strip of white door trim still shows along the left wall's edge.
 - The TV, door and window view are fitted to this one camera angle. With a second photo, the window view would show a little parallax.
