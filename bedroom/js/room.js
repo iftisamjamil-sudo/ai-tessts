@@ -217,7 +217,7 @@ export function buildRoom() {
   box(group, trim, 0.032, h, 0.012, -0.106, h / 2, z1 - 0.006);
   box(group, trim, 0.032, 0.012, dw, -0.106, h - 0.006, zc);
   box(group, nickel, 0.028, 0.07, 0.003, -0.14, 0.91, z0 + 0.0015);
-  const hinge = put(group, new THREE.Group(), -JAMB, 0, z1);
+  const hinge = put(ceiling, new THREE.Group(), -JAMB, 0, z1); // door and hallway sit outside the room, so Dollhouse hides them with the ceiling
   hinge.rotation.y = Math.PI / 2; // open 90 deg into the hallway, flat against its end wall
   const slabW = dw - 0.006;
   box(hinge, trim, 0.035, h - 0.012, slabW, 0.0175, h / 2, -0.003 - slabW / 2);
@@ -225,7 +225,7 @@ export function buildRoom() {
   const hallMat = std(0xd8cdbd, 0.9, { side: THREE.BackSide });
   const hallFloor = floorTex.clone();
   hallFloor.repeat.set(1 / TILE, (dw + 1.04) / TILE);
-  box(group, [new THREE.MeshBasicMaterial({ visible: false }), hallMat, hallMat, std(0xffffff, 0.5, { map: hallFloor, side: THREE.BackSide }), hallMat, hallMat],
+  box(ceiling, [new THREE.MeshBasicMaterial({ visible: false }), hallMat, hallMat, std(0xffffff, 0.5, { map: hallFloor, side: THREE.BackSide }), hallMat, hallMat],
     1, H, dw + 1.04, -JAMB - 0.5, H / 2, (z0 - 1 + z1 + 0.04) / 2);
   box(group, std(0x5b3420, 0.5), JAMB, 0.01, dw, -JAMB / 2, 0, zc); // wood threshold across the wall thickness
 
