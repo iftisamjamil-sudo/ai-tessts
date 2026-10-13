@@ -18,9 +18,9 @@ const LOOP_S = 60; // one cinematic loop
 const KEYS = [
   [6, 0x1c2540, 0x2a3558, 0x6f7fa8, 0.5, 0x6a7290, 0.4],
   [7.5, 0xe8b48a, 0xffcfa8, 0xffd2aa, 6, 0xd8c4b0, 1.35],
-  [10, 0xc6d8ec, 0xfff6ea, 0xfff2e2, 9, 0xe6e8ec, 2.0],
-  [13, 0xc9d5e2, 0xffffff, 0xe4ecff, 9, 0xdfe6f0, 2.2],
-  [16.5, 0xcfcdc8, 0xf4ecdf, 0xf2ead8, 7, 0xe2ddd4, 1.7],
+  [10, 0xc6d8ec, 0xfff6ea, 0xfff2e2, 9, 0xd4def2, 1.8],
+  [13, 0xc9d5e2, 0xffffff, 0xdde6ff, 9, 0xd4def2, 2.0],
+  [16.5, 0xcfcdc8, 0xf4ecdf, 0xf2ead8, 7, 0xe2ddd4, 1.55],
   [18.5, 0xe0874a, 0xff9c5c, 0xffa868, 3, 0xd8a888, 1.0],
   [20, 0x262a4c, 0x2c3460, 0x4a5888, 0.6, 0x5c5a74, 0.4],
   [23, 0x070c1a, 0x0b1226, 0x1c2848, 0.1, 0x4a4050, 0.25],
@@ -79,14 +79,19 @@ scene.traverse((o) => { if (o.isMesh && !o.userData.noShadow) o.castShadow = o.r
 const hemi = new THREE.HemisphereLight(0xffffff, 0x2a2020, 1);
 hemi.position.set(0, 0.6, 1.5); // leans toward the window wall, like bounce from the bright room behind the photographer
 const { x0, x1, y0, y1 } = WINDOW;
-const daylight = new THREE.RectAreaLight(0xffffff, 1, x1 - x0, y1 - y0);
-daylight.position.set((x0 + x1) / 2, (y0 + y1) / 2, 0.01);
+const daylight = new THREE.RectAreaLight(0xffffff, 1, x1 - x0, y1 - y0 - 0.11); // stops under the 11 cm roller-shade box
+daylight.position.set((x0 + x1) / 2, (y0 + y1) / 2 - 0.055, 0.01);
 daylight.lookAt(daylight.position.x, daylight.position.y, 1);
+// Daylight from behind the photographer: washes the left wall and near floor cool, as in the photo.
+const frontFill = new THREE.RectAreaLight(0xffffff, 1, 2.2, 1.3);
+frontFill.position.set(2.3, 1.15, ROOM.D - 0.01);
+frontFill.lookAt(0, 0.9, 3.0);
 const ceilingLight = new THREE.PointLight(0xffd7a8, CEILING_CD, 0, 2);
 ceilingLight.position.set(CEILING_LIGHT.x, ROOM.H - 0.12, CEILING_LIGHT.z);
 ceilingLight.castShadow = true;
 ceilingLight.shadow.mapSize.set(1024, 1024);
 ceilingLight.shadow.bias = -0.002;
+ceilingLight.shadow.normalBias = 0.02;
 const sun = new THREE.DirectionalLight(0xffffff, 0);
 sun.target.position.set(ROOM.W / 2, 0, ROOM.D / 2);
 sun.castShadow = true;
@@ -95,7 +100,7 @@ Object.assign(sun.shadow.camera, { left: -4.5, right: 4.5, top: 4.5, bottom: -4.
 sun.shadow.camera.updateProjectionMatrix();
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.02;
-scene.add(hemi, daylight, ceilingLight, sun, sun.target);
+scene.add(hemi, daylight, frontFill, ceilingLight, sun, sun.target);
 
 // The room seen from its centre lights itself: one bounce of fill plus reflections in the floor, chrome and glass.
 const envCam = new THREE.CubeCamera(0.05, 20, new THREE.WebGLCubeRenderTarget(128, { type: THREE.HalfFloatType }));
@@ -201,7 +206,8 @@ function setTime(h) {
   col(1, scene.background);
   col(2, room.windowView.material.color);
   col(3, daylight.color);
-  daylight.intensity = THREE.MathUtils.lerp(a[4], b[4], t);
+  daylight.intensity = frontFill.intensity = THREE.MathUtils.lerp(a[4], b[4], t);
+  frontFill.color.copy(daylight.color);
   col(5, hemi.color);
   hemi.intensity = THREE.MathUtils.lerp(a[6], b[6], t);
   // The window faces east (-z) and south is +x: the sun rises at 6:00 and only shines in before noon.

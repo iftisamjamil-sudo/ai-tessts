@@ -46,12 +46,16 @@ JOBS = {
     'seagrass': ((256, 256), [(82, 1062), (152, 1062), (152, 1132), (82, 1132)]),
 }
 
+# Mean colour (sRGB) of the weave textures, solved so the render matches the photo under the
+# room's lighting: the crops' own means are already shaded, and ACES's toe crushes them to near-black.
+WEAVE = {'wicker': (95, 63, 36), 'seagrass': (103, 67, 40)}
+
 src = Image.open('photos/photo1.jpg').convert('RGB')
 for name, (size, quad) in JOBS.items():
     img = rectify(src, size, quad)
-    if name in ('wicker', 'seagrass'):
+    if name in WEAVE:
         # Divide out the photo's shading gradient so the weave repeats without visible seams.
         a = np.asarray(img, float)
         blur = np.asarray(img.filter(ImageFilter.GaussianBlur(40)), float)
-        img = Image.fromarray(np.clip(a / blur * blur.mean((0, 1)), 0, 255).astype(np.uint8))
+        img = Image.fromarray(np.clip(a / blur * WEAVE[name], 0, 255).astype(np.uint8))
     img.save(f'textures/{name}.jpg', quality=90)

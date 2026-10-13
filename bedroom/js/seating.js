@@ -4,8 +4,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { ARMCHAIR, FLOOR_LAMP, CONSOLE } from './layout.js';
 
 const POINT_CD = 2; // warm fill from inside the shade (candela)
-const SPOT_CD = 16; // upward cone that paints the scallop on the back and left walls (candela)
-const GLOW = 1; // shade emissiveIntensity when on
+const SPOT_CD = 2.5; // wide cone from the shade top that paints the scallop on the back and left walls (candela)
+const GLOW = 0.6; // shade emissiveIntensity when on
 
 const CHAIR = { armT: 0.09, armTop: 0.70, cap: 0.035, post: 0.035, leg: 0.10, deck: 0.32, seat: 0.47, back: 0.70, backT: 0.05 }; // back no higher than the arms: in the photo nothing shows above the right arm
 const LAMP = { hub: 1.16, shade0: 1.19, shade1: 1.47, rTop: 0.20, rBot: 0.21, spread: 0.28, legYaw: 0.26 }; // shade and leg directions fitted to the photo
@@ -13,7 +13,7 @@ const RIM = { w: 0.04, h: 0.035 }; // console tier rim: radial width, height
 const TILE = 0.12; // metres per repeat of the wicker and seagrass photo crops
 
 const std = (color, roughness, extra) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
-const suede = new THREE.MeshPhysicalMaterial({ color: 0xe6dccb, roughness: 0.9, sheen: 0.5, sheenRoughness: 0.7, sheenColor: 0xffffff });
+const suede = new THREE.MeshPhysicalMaterial({ color: 0xf2d0c0, roughness: 0.9, sheen: 0.5, sheenRoughness: 0.7, sheenColor: 0xffffff });
 const wood = std(0x3b2a24, 0.4);
 const steel = std(0xd9d9d6, 0.3, { metalness: 0.5 });
 const glass = new THREE.MeshPhysicalMaterial({ color: 0xd2e4da, roughness: 0.04, transparent: true, opacity: 0.16, depthWrite: false });
@@ -72,7 +72,7 @@ function buildArmchair() {
     const x = s * (W - armT) / 2;
     add(g, rbox(armT - 0.014, armTop - cap - leg + 0.01, D - post - 0.004, 0.012), suede, x, (leg + armTop - cap) / 2, zb + (D - post) / 2);
     add(g, rbox(armT, cap, D, 0.01), wood, x, armTop - cap / 2, 0);
-    add(g, rbox(armT, armTop - 0.004, post, 0.006), wood, x, (armTop - 0.004) / 2, zf - post / 2);
+    add(g, rbox(0.055, armTop - 0.004, post, 0.006), wood, x + s * (armT - 0.055) / 2, (armTop - 0.004) / 2, zf - post / 2); // narrow post on the arm's outer edge
     add(g, new THREE.BoxGeometry(0.04, leg, 0.04), wood, s * (W / 2 - 0.03), leg / 2, zb + 0.04);
   }
   add(g, new THREE.BoxGeometry(iw + 0.01, 0.04, 0.03), wood, 0, leg + 0.02, zf - 0.02); // front rail
@@ -88,7 +88,7 @@ function buildArmchair() {
   add(g, rbox(iw - 0.01, bh, 0.07, 0.03), suede, 0, seat + bh / 2, zb + backT + 0.035).rotation.x = -0.08;
 
   // Loose square pillow sunk into the back cushion, leaning over the back's top with a corner over the left arm (pose fitted to the photo).
-  add(g, pillowGeo(0.46, 0.46, 0.17), suede, -0.166, 0.685, zb + 0.128).rotation.set(-0.595, -0.252, 0.164, 'YXZ');
+  add(g, pillowGeo(0.46, 0.46, 0.12), suede, -0.166, 0.665, zb + 0.128).rotation.set(-0.595, -0.252, 0.05, 'YXZ');
 
   g.position.set(ARMCHAIR.x, 0, ARMCHAIR.z);
   g.rotation.y = ARMCHAIR.rotY;
@@ -111,18 +111,25 @@ function buildFloorLamp() {
   const bulbY = shade0 + 0.08;
   rod(root, V(0, hub, 0), V(0, bulbY - 0.03, 0), 0.007, steel);
 
-  const glow = std(0xb88a55, 0.9, { emissive: 0xf07a30, emissiveIntensity: GLOW, side: THREE.DoubleSide });
+  const glow = std(0xa8703a, 0.9, { emissive: 0xe06a20, emissiveIntensity: GLOW, side: THREE.DoubleSide });
   const shade = add(root, new THREE.CylinderGeometry(rTop, rBot, shade1 - shade0, 64, 1, true), glow, 0, (shade0 + shade1) / 2, 0);
   const trimTop = add(root, new THREE.TorusGeometry(rTop, 0.004, 6, 64), glow, 0, shade1, 0);
   const trimBot = add(root, new THREE.TorusGeometry(rBot, 0.004, 6, 64), glow, 0, shade0, 0);
   trimTop.rotation.x = trimBot.rotation.x = Math.PI / 2;
   const bulb = add(root, new THREE.SphereGeometry(0.035, 16, 12), std(0xfff4e0, 0.5, { emissive: 0xffe2b8, emissiveIntensity: 2 }), 0, bulbY, 0);
-  for (const m of [shade, trimTop, trimBot, bulb]) m.userData.noShadow = true;
+  for (const m of [trimTop, trimBot, bulb]) m.userData.noShadow = true; // the shade casts: light leaves only through its openings
 
-  const point = new THREE.PointLight(0xffc58a, POINT_CD, 0, 2);
-  const spot = new THREE.SpotLight(0xffc58a, SPOT_CD, 0, 0.9, 0.6, 2); // 0.9 rad: the cone the shade's top opening lets out
-  point.position.y = spot.position.y = bulbY;
-  spot.target.position.y = bulbY + 1;
+  const point = new THREE.PointLight(0xffa850, POINT_CD, 0, 2);
+  const spot = new THREE.SpotLight(0xffa850, SPOT_CD, 0, 1.5, 0.25, 2);
+  point.position.y = bulbY;
+  spot.position.set(-0.05, shade1 - 0.03, -0.07); // just under the shade top, nudged toward the corner so the scallop peaks right above the shade
+  spot.target.position.set(-0.05, shade1 + 0.97, -0.07);
+  for (const l of [point, spot]) {
+    l.castShadow = true;
+    l.shadow.mapSize.set(512, 512);
+    l.shadow.bias = -0.002;
+    l.shadow.camera.near = 0.02; // the shade is closer than the default 0.5 m near plane
+  }
   root.add(point, spot, spot.target);
 
   return {
@@ -188,7 +195,7 @@ const leafTex = canvasTex(64, (g) => {
     g.closePath();
   };
   leaf(1); g.fillStyle = '#cfdcb0'; g.fill(); // thin variegated margin, as on the photo's ivy
-  leaf(0.84); g.fillStyle = '#2e5b26'; g.fill();
+  leaf(0.92); g.fillStyle = '#2e5b26'; g.fill();
   g.strokeStyle = '#a9c495'; g.lineWidth = 1.5;
   for (const [x, y] of [[32, 6], [52, 18], [56, 44], [8, 44], [12, 18]]) { g.beginPath(); g.moveTo(32, 50); g.lineTo(32 + (x - 32) * 0.6, 50 + (y - 50) * 0.6); g.stroke(); }
 });
@@ -206,9 +213,9 @@ function ivy() {
   const stems = [], leaves = [], d = new THREE.Object3D();
   for (let k = 0; k < 18; k++) {
     const trail = k >= 15, a = trail ? (k - 16) * 0.7 + rnd() * 0.3 : rnd() * 2 * Math.PI; // trailers spill toward the open side (+x)
-    const len = trail ? 0.2 + rnd() * 0.08 : 0.1 + rnd() * 0.12, rise = trail ? 0.06 : 0.06 + rnd() * 0.1;
+    const len = trail ? 0.08 + rnd() * 0.05 : 0.1 + rnd() * 0.12, rise = trail ? 0.06 : 0.06 + rnd() * 0.1;
     const dir = (r, y) => new THREE.Vector3(Math.cos(a) * r, 0.07 + y, Math.sin(a) * r);
-    const end = trail ? -0.06 - rnd() * 0.08 : rise - 0.05;
+    const end = trail ? -0.02 - rnd() * 0.03 : rise - 0.05;
     const curve = new THREE.CatmullRomCurve3([dir(0, 0), dir(len * 0.35, rise), dir(len * 0.75, (rise + end) / 2 + 0.03), dir(len, end)]);
     stems.push(new THREE.TubeGeometry(curve, 16, 0.0018, 4));
     for (let t = 0.12; t <= 1; t += 0.07 + rnd() * 0.05) {
