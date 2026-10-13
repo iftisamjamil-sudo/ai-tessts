@@ -6,7 +6,7 @@ const TILE = 2.6; // metres of floor per texture repeat (20 planks)
 const REVEAL = 0.12; // window drywall return depth
 const JAMB = 0.16; // wall thickness at the door
 const CASING = 0.07;
-const VIEW = [1.59, 3.49, 0.77, 1.96]; // x0, x1, y0, y1 on z=0 that tools/textures.py rectified into window.jpg
+const VIEW = [1.53, 3.445, 0.757, 1.956]; // x0, x1, y0, y1 on z=0 that tools/textures.py rectified into window.jpg
 
 const std = (color, roughness, extra) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
 const wallMat = std(0x64616a, 0.92);
@@ -109,7 +109,7 @@ function curtain(x0, x1) {
     const fold = 0.03 * Math.abs(Math.sin(u * Math.PI * pleats)) * (0.3 + gather)
       + (0.008 + 0.018 * Math.min(1, drop * 2)) * Math.sin(u * Math.PI * 2 * folds + 0.8 + drop * 1.2)
       + 0.012 * Math.sin(u * Math.PI * 2 * (folds + 1.5) + 2 + drop * 3);
-    let y = top - drop * len, z = CURTAINS.wallGap + fold;
+    let y = top - drop * len, z = CURTAINS.wallGap + 0.025 + fold; // clear of the rod, which the heading hides
     if (y < 0.006) { z += 0.006 - y; y = 0.006; }
     p.setXYZ(i, (x0 + x1) / 2 + (u - 0.5) * w * 0.92, y, z);
   }
@@ -246,7 +246,7 @@ export function buildRoom() {
   // The photo's screen mirrors the dark wall at the top and the bright window below.
   const glare = Object.assign(document.createElement('canvas'), { width: 1, height: 64 }), gc = glare.getContext('2d'), ramp = gc.createLinearGradient(0, 0, 0, 64);
   ramp.addColorStop(0.2, '#656364');
-  ramp.addColorStop(0.65, '#aec3ec');
+  ramp.addColorStop(0.65, '#a2b9e8');
   gc.fillStyle = ramp;
   gc.fillRect(0, 0, 1, 64);
   const glareTex = new THREE.CanvasTexture(glare);

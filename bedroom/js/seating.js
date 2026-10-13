@@ -13,7 +13,7 @@ const RIM = { w: 0.04, h: 0.035 }; // console tier rim: radial width, height
 const TILE = 0.12; // metres per repeat of the wicker and seagrass photo crops
 
 const std = (color, roughness, extra) => new THREE.MeshStandardMaterial({ color, roughness, ...extra });
-const suede = new THREE.MeshPhysicalMaterial({ color: 0xf2d0c0, roughness: 0.9, sheen: 0.5, sheenRoughness: 0.7, sheenColor: 0xffffff });
+const suede = new THREE.MeshPhysicalMaterial({ color: 0xf8cab2, roughness: 0.9, sheen: 0.5, sheenRoughness: 0.7, sheenColor: 0xffffff });
 const wood = std(0x3b2a24, 0.4);
 const steel = std(0xd9d9d6, 0.3, { metalness: 0.5 });
 const glass = new THREE.MeshPhysicalMaterial({ color: 0xd2e4da, roughness: 0.04, transparent: true, opacity: 0.16, depthWrite: false });
@@ -88,6 +88,18 @@ function buildArmchair() {
   add(g, rbox(iw - 0.01, bh, 0.07, 0.03), suede, 0, seat + bh / 2, zb + backT + 0.035).rotation.x = -0.08;
 
   // Loose square pillow sunk into the back cushion, leaning over the back's top with a corner over the left arm (pose fitted to the photo).
+  // Soft contact shadow: the hemisphere and env fill would otherwise light the floor under the seat like open floor.
+  const pool = canvasTex(64, (c, n) => {
+    const r = c.createRadialGradient(n / 2, n / 2, 0, n / 2, n / 2, n / 2);
+    r.addColorStop(0.5, 'rgba(0,0,0,1)');
+    r.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = r;
+    c.fillRect(0, 0, n, n);
+  });
+  const shadow = add(g, new THREE.PlaneGeometry(W + 0.12, D + 0.12), new THREE.MeshBasicMaterial({ map: pool, transparent: true, opacity: 0.6, depthWrite: false }), 0, 0.002, 0);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.userData.noShadow = true;
+
   add(g, pillowGeo(0.46, 0.46, 0.12), suede, -0.166, 0.665, zb + 0.128).rotation.set(-0.595, -0.252, 0.05, 'YXZ');
 
   g.position.set(ARMCHAIR.x, 0, ARMCHAIR.z);
@@ -129,6 +141,7 @@ function buildFloorLamp() {
     l.shadow.mapSize.set(512, 512);
     l.shadow.bias = -0.002;
     l.shadow.camera.near = 0.02; // the shade is closer than the default 0.5 m near plane
+    l.shadow.camera.updateProjectionMatrix(); // three only refreshes a point shadow's projection when its far changes
   }
   root.add(point, spot, spot.target);
 

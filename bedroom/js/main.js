@@ -91,7 +91,6 @@ ceilingLight.position.set(CEILING_LIGHT.x, ROOM.H - 0.12, CEILING_LIGHT.z);
 ceilingLight.castShadow = true;
 ceilingLight.shadow.mapSize.set(1024, 1024);
 ceilingLight.shadow.bias = -0.002;
-ceilingLight.shadow.normalBias = 0.02;
 const sun = new THREE.DirectionalLight(0xffffff, 0);
 sun.target.position.set(ROOM.W / 2, 0, ROOM.D / 2);
 sun.castShadow = true;
@@ -206,8 +205,9 @@ function setTime(h) {
   col(1, scene.background);
   col(2, room.windowView.material.color);
   col(3, daylight.color);
-  daylight.intensity = frontFill.intensity = THREE.MathUtils.lerp(a[4], b[4], t);
+  daylight.intensity = THREE.MathUtils.lerp(a[4], b[4], t);
   frontFill.color.copy(daylight.color);
+  frontFill.intensity = 1.5 * daylight.intensity; // 1.5 brings the near floor to the photo's brightness
   col(5, hemi.color);
   hemi.intensity = THREE.MathUtils.lerp(a[6], b[6], t);
   // The window faces east (-z) and south is +x: the sun rises at 6:00 and only shines in before noon.
