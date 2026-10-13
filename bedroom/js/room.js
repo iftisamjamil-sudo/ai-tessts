@@ -180,10 +180,11 @@ export function buildRoom() {
     box(group, trim, 0.035, wh, 0.05, m - s * 0.0175, yc, fz);
   }
   const glass = put(group, new THREE.Mesh(new THREE.PlaneGeometry(ww, wh),
-    std(0xd6e4dc, 0.05, { transparent: true, opacity: 0.12, depthWrite: false })), xc, yc, fz - 0.005);
+    std(0xd6e4dc, 0.05, { transparent: true, opacity: 0.12, depthWrite: false })), xc, yc, fz + 0.004);
   glass.userData.noShadow = true;
   // Map window.jpg as seen from the photo camera, so the trees line up with the photo from there.
-  const viewTex = image('textures/window.jpg'), viewZ = fz - 0.03, [px, py, pz] = PHOTOS[0].position, k = (pz - viewZ) / pz;
+  // The plane runs through the frame members, which hide its edges; close to the glass keeps parallax small.
+  const viewTex = image('textures/window.jpg'), viewZ = fz - 0.008, [px, py, pz] = PHOTOS[0].position, k = (pz - viewZ) / pz;
   const [vx0, vx1, vy0, vy1] = VIEW.map((v, i) => (i < 2 ? px : py) + k * (v - (i < 2 ? px : py)));
   viewTex.wrapS = viewTex.wrapT = THREE.MirroredRepeatWrapping; // beyond the photo's crop, mirror rather than smear
   viewTex.repeat.set(ww / (vx1 - vx0), wh / (vy1 - vy0));
