@@ -141,6 +141,7 @@ function buildFloorLamp() {
     l.shadow.mapSize.set(512, 512);
     l.shadow.bias = -0.002;
     l.shadow.camera.near = 0.02; // the shade is closer than the default 0.5 m near plane
+    l.shadow.camera.far = 9; // the room's diagonal; a point shadow's bias scales with far, so the default 500 m bias skips the shade entirely
     l.shadow.camera.updateProjectionMatrix(); // three only refreshes a point shadow's projection when its far changes
   }
   root.add(point, spot, spot.target);

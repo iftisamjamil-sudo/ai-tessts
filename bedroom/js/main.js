@@ -205,9 +205,8 @@ function setTime(h) {
   col(1, scene.background);
   col(2, room.windowView.material.color);
   col(3, daylight.color);
-  daylight.intensity = THREE.MathUtils.lerp(a[4], b[4], t);
+  daylight.intensity = frontFill.intensity = THREE.MathUtils.lerp(a[4], b[4], t);
   frontFill.color.copy(daylight.color);
-  frontFill.intensity = 1.5 * daylight.intensity; // 1.5 brings the near floor to the photo's brightness
   col(5, hemi.color);
   hemi.intensity = THREE.MathUtils.lerp(a[6], b[6], t);
   // The window faces east (-z) and south is +x: the sun rises at 6:00 and only shines in before noon.
