@@ -141,7 +141,7 @@ export function buildRoom() {
   // Ceiling and flush-mount fixture (main.js adds the light)
   const ceiling = new THREE.Group();
   group.add(ceiling);
-  put(ceiling, new THREE.Mesh(new THREE.PlaneGeometry(W, D), std(0xd8cabf, 0.9)), W / 2, H, D / 2).rotation.x = Math.PI / 2;
+  put(ceiling, new THREE.Mesh(new THREE.PlaneGeometry(W, D), std(0xc5ad9b, 0.9)), W / 2, H, D / 2).rotation.x = Math.PI / 2;
   const fixture = put(ceiling, new THREE.Group(), CEILING_LIGHT.x, H, CEILING_LIGHT.z);
   const ring = [[0.19, 0], [0.192, -0.01], [0.186, -0.028], [0.174, -0.042], [0.163, -0.046]].map(([r, y]) => new THREE.Vector2(r, y));
   fixture.add(new THREE.Mesh(new THREE.LatheGeometry(ring, 64), std(0xe0d2bc, 0.3, { emissive: 0x5a4630, side: THREE.DoubleSide })));

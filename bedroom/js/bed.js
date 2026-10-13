@@ -102,7 +102,7 @@ const grainCanvas = canvas(512, 512, (g, S) => {
 });
 
 const linen = std(0xdcdce8, 0.95, { map: tex(linenCanvas, 0.3), bumpMap: tex(linenCanvas, 0.3, false), bumpScale: 0.4 });
-const quilt = std(0xe0e0ec, 0.92, { map: tex(quiltCanvas, 0.4), bumpMap: tex(quiltCanvas, 0.4, false), bumpScale: 1.5, side: THREE.DoubleSide });
+const quilt = std(0xd2d2de, 0.92, { map: tex(quiltCanvas, 0.4), bumpMap: tex(quiltCanvas, 0.4, false), bumpScale: 1.5, side: THREE.DoubleSide });
 const wood = std(0x5a4642, 0.45, { map: tex(grainCanvas, 0.6) });
 const legWood = std(0x2a1c17, 0.5);
 const nickel = std(0xc8c8c4, 0.2, { metalness: 0.85 });

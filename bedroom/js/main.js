@@ -83,8 +83,8 @@ const daylight = new THREE.RectAreaLight(0xffffff, 1, x1 - x0, y1 - y0 - 0.11); 
 daylight.position.set((x0 + x1) / 2, (y0 + y1) / 2 - 0.055, 0.01);
 daylight.lookAt(daylight.position.x, daylight.position.y, 1);
 // Daylight from behind the photographer: washes the left wall and near floor cool, as in the photo.
-const frontFill = new THREE.RectAreaLight(0xffffff, 1, 2.2, 1.3);
-frontFill.position.set(2.3, 1.15, ROOM.D - 0.01);
+const frontFill = new THREE.RectAreaLight(0xffffff, 1, 1.8, 1.3);
+frontFill.position.set(1.6, 1.15, ROOM.D - 0.01); // left of centre: lights the left wall without flooding the bed's near side
 frontFill.lookAt(0, 0.9, 3.0);
 const ceilingLight = new THREE.PointLight(0xffd7a8, CEILING_CD, 0, 2);
 ceilingLight.position.set(CEILING_LIGHT.x, ROOM.H - 0.12, CEILING_LIGHT.z);
